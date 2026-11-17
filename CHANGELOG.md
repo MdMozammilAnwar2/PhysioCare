@@ -5,7 +5,7 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
-## [Unreleased] — Phase 1 · Patient books and pays (0.2.0)
+## [0.2.0] — Phase 1 · Patient books and pays
 
 ### Added
 - Patient profile, addresses mapped to zones, consents.
@@ -20,6 +20,17 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - Fake payment provider for development and tests (same signature scheme as Razorpay).
 - Website booking flow: sign in with OTP (referral code and UTM captured), About you + consents, home or video,
   area and zone check, top 3 physios with the family-present option, day and time, plan, Razorpay checkout, confirmation, My bookings.
+- Patient mobile app (Expo SDK 58, Expo Router): welcome, OTP sign-in with referral code, About you and consents,
+  home or video with zone check, top 3 with family-present option, day/time and plan with gender-rule consent,
+  confirmation, bookings; status check with maintenance, offline and forced-update screens; tokens in SecureStore.
+- All web and mobile apps on React 19.3 (one React version across the monorepo).
+
+### Known gaps
+- In-app Razorpay checkout needs a custom Expo development build (react-native-razorpay); until then the app asks
+  patients to pay on the website when real keys are set. The development payment simulator works in all apps.
+- Drive time is estimated (3 min/km + 10 min); Google Maps distance matrix comes later.
+- Zones are centre + radius until they can be drawn in the console.
+- Physio-side consent for the gender rule is recorded as needed; the physio app asks for it in Phase 2.
 - Public `GET /api/v1/zones`; development-only payment simulator and demo physios (`npm run api:seed:demo`).
 
 ## [0.1.0] — Phase 0 · Foundations

@@ -1,7 +1,7 @@
 # PhysioConnect by Healthtropic
 
 Verified physiotherapy at home, matched by zone, safety rules and recovery needs.
-Version **0.1.0 · Phase 0 (Foundations)**. See [CHANGELOG.md](CHANGELOG.md).
+Version **0.2.0 · Phase 1 (Patient books and pays)**. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Repository
 
@@ -10,10 +10,11 @@ Version **0.1.0 · Phase 0 (Foundations)**. See [CHANGELOG.md](CHANGELOG.md).
 | `apps/api` | Node.js + Express REST API, PostgreSQL via Sequelize, migrations, tests |
 | `apps/web-admin` | Admin console (React + Vite + Tailwind) — super admin, ops, finance, city coordinator |
 | `apps/web-site` | Public website and web booking (React + Vite + Tailwind) |
+| `apps/mobile-patient` | Patient app (React Native, Expo SDK 58, Expo Router) |
 | `packages/tokens` | Style A (Clean Blue) design tokens + Tailwind preset, shared by every app |
 | `packages/shared` | Roles, zone colours, attribution sources, visit statuses, app version |
 
-Mobile apps (patient, therapist, partner, super admin — React Native) are added in Phase 1.
+Therapist, partner and super admin mobile apps come in later phases.
 
 ## Run it locally
 
@@ -30,6 +31,7 @@ npm run api:dev                       # http://localhost:4000
 npm run admin:dev                     # http://localhost:5174
 npm run site:dev                      # http://localhost:5173
 npm test                              # API tests against a real Postgres
+npm run patient:dev                   # Expo dev server; set EXPO_PUBLIC_API_URL in apps/mobile-patient/.env
 ```
 
 In development, `SMS_PROVIDER=console` prints OTP codes in the API log instead of sending SMS.

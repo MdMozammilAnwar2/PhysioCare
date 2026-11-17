@@ -9,3 +9,4 @@ coverage/
 .DS_Store
 .expo/
 .vite/
+apps/*/.claude/

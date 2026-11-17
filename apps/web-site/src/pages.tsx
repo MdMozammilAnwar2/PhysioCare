@@ -10,7 +10,7 @@ const fmtDay = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { time
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { timeZone: IST, hour: 'numeric', minute: '2-digit' });
 const istYmd = (d: Date) => new Date(d.getTime() + 330 * 60000).toISOString().slice(0, 10);
 
-export function RequireAuth({ children }: { children: JSX.Element }) {
+export function RequireAuth({ children }: { children: React.ReactElement }) {
   const loc = useLocation();
   return isSignedIn() ? children : <Navigate to={`/signin?next=${encodeURIComponent(loc.pathname)}`} replace />;
 }

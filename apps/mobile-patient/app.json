@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "PhysioConnect",
+    "slug": "physioconnect-patient",
+    "scheme": "physioconnect",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "in.healthtropic.physioconnect"
+    },
+    "android": {
+      "package": "in.healthtropic.physioconnect",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A6CFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
