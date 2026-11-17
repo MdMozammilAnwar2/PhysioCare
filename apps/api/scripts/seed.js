@@ -5,14 +5,24 @@ import { normalizeIndianPhone } from '../src/lib/util.js';
 import { audit } from '../src/services/audit.js';
 
 const CITIES = [['Patna', 'live'], ['Muzaffarpur', 'recruiting'], ['Hajipur', 'recruiting'], ['Samastipur', 'planned'], ['Darbhanga', 'planned'], ['Gaya', 'planned'], ['Bhagalpur', 'planned'], ['Seemanchal', 'planned']];
-const PATNA_ZONES = [['Kankarbagh', 'green'], ['Rajendra Nagar', 'green'], ['Patliputra', 'green'], ['Bailey Road', 'green'], ['Gardanibagh', 'green'], ['Boring Road', 'orange'], ['Danapur', 'yellow'], ['Phulwari Sharif', 'yellow'], ['Anisabad', 'yellow'], ['Kurji', 'blue'], ['Ashok Rajpath', 'blue'], ['Digha', 'red']];
+// [name, colour, approx centre lat, lng, radius km] — placeholders until zones are drawn in the console.
+const PATNA_ZONES = [
+  ['Kankarbagh', 'green', 25.5940, 85.1580, 2.5], ['Rajendra Nagar', 'green', 25.6060, 85.1650, 1.5], ['Patliputra', 'green', 25.6200, 85.1000, 2],
+  ['Bailey Road', 'green', 25.6050, 85.0950, 2], ['Gardanibagh', 'green', 25.5880, 85.1180, 1.5], ['Boring Road', 'orange', 25.6160, 85.1150, 1.5],
+  ['Danapur', 'yellow', 25.6300, 85.0450, 3], ['Phulwari Sharif', 'yellow', 25.5700, 85.0800, 2.5], ['Anisabad', 'yellow', 25.5850, 85.1000, 1.5],
+  ['Kurji', 'blue', 25.6380, 85.1050, 1.2], ['Ashok Rajpath', 'blue', 25.6200, 85.1700, 1.5], ['Digha', 'red', 25.6430, 85.0980, 1.5],
+];
 
 try {
   for (const [name, status] of CITIES) {
     await sequelize.query(`INSERT INTO cities (name, status) VALUES (:name, :status) ON CONFLICT (name) DO NOTHING`, { replacements: { name, status } });
   }
-  for (const [name, color] of PATNA_ZONES) {
-    await sequelize.query(`INSERT INTO zones (city_id, name, color, reason) SELECT id, :name, :color, 'Initial setup' FROM cities WHERE name = 'Patna' ON CONFLICT (city_id, name) DO NOTHING`, { replacements: { name, color } });
+  for (const [name, color, lat, lng, r] of PATNA_ZONES) {
+    await sequelize.query(`INSERT INTO zones (city_id, name, color, reason, center_lat, center_lng, radius_km)
+      SELECT id, :name, :color, 'Initial setup', :lat, :lng, :r FROM cities WHERE name = 'Patna'
+      ON CONFLICT (city_id, name) DO UPDATE SET center_lat = COALESCE(zones.center_lat, EXCLUDED.center_lat),
+        center_lng = COALESCE(zones.center_lng, EXCLUDED.center_lng), radius_km = COALESCE(zones.radius_km, EXCLUDED.radius_km)`,
+    { replacements: { name, color, lat, lng, r } });
   }
   console.log(`Seeded ${CITIES.length} cities and ${PATNA_ZONES.length} Patna zones.`);
 

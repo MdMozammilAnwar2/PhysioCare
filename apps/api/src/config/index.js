@@ -29,5 +29,10 @@ export const config = {
     msg91AuthKey: env.MSG91_AUTH_KEY,
     msg91TemplateId: env.MSG91_OTP_TEMPLATE_ID,
   },
-  corsOrigins: (env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174').split(',').map(s => s.trim()),
+  razorpay: {
+    keyId: env.RAZORPAY_KEY_ID,
+    keySecret: isTest ? 'test-razorpay-secret' : env.RAZORPAY_KEY_SECRET,
+    webhookSecret: isTest ? 'test-webhook-secret' : env.RAZORPAY_WEBHOOK_SECRET,
+  },
+  corsOrigins:(env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174').split(',').map(s => s.trim()),
 };

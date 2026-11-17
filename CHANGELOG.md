@@ -5,6 +5,20 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [Unreleased] — Phase 1 · Patient books and pays (0.2.0)
+
+### Added
+- Patient profile, addresses mapped to zones, consents.
+- Therapist profiles, per-mode prices and packages.
+- Matching (top 3): verified and accepting physios only, patient's gender preference never broken,
+  gender safety rule (woman + male physio only with a named family member present and recorded consent),
+  physio's own "female patients only" setting, service radius, personal blocks; ranked by speciality, rating, distance, tier.
+- Scheduling engine: availability rules, leave, external busy blocks, live visits and unexpired holds,
+  travel time between home visits (3 min/km + 10 min buffer), zone hours (Orange 8 AM–6 PM, Red closed), 3-hour notice, 60-day window, daily cap.
+- Booking: slot hold (10 min) → Razorpay order → checkout signature verification or webhook → plan active, visit booked,
+  invoice number, notification, attribution credit locked. Idempotent; late payments flag "pick a new time".
+- Fake payment provider for development and tests (same signature scheme as Razorpay).
+
 ## [0.1.0] — Phase 0 · Foundations
 
 ### Added
