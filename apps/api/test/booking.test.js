@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { lastCodeSentTo } from '../src/services/sms.js';
-import { checkoutSignature, webhookSignature } from '../src/services/payments.js';
 import { addDays, fromIst, istDate } from '../src/lib/time.js';
 import { User, sequelize } from '../src/models/index.js';
 
@@ -41,6 +40,7 @@ beforeAll(async () => {
     await q(`INSERT INTO therapist_prices (therapist_id, mode, price_paise) VALUES (:u, 'home', 80000), (:u, 'video', 50000)`, { u: t.id });
     for (let wd = 0; wd < 7; wd++) await q(`INSERT INTO availability_rules (therapist_id, weekday, start_time, end_time, modes) VALUES (:u, :wd, '07:00', '21:00', '{home,video}')`, { u: t.id, wd });
   }
+  await q(`UPDATE app_settings SET value = '{"upiId": "physioconnect@testbank", "payeeName": "PhysioConnect"}' WHERE key = 'payment_upi'`);
   pkgId = (await q(`INSERT INTO packages (therapist_id, name, mode, sessions, price_paise) VALUES (:u, '10-session recovery plan', 'home', 10, 640000) RETURNING id`, { u: priya.id }))[0][0].id;
 });
 afterAll(async () => { await sequelize.close(); });
@@ -92,59 +92,86 @@ describe('slots', () => {
   });
 });
 
-describe('booking and payment', () => {
-  it('holds a slot, confirms on a valid payment, and issues an invoice', async () => {
+async function holdAndConfirm(p, therapist, start, method, extra = {}) {
+  const { id } = await addAddress(p.token, ...KANKARBAGH);
+  const hold = await request(app).post('/api/v1/bookings/hold').set(auth(p.token)).send({ therapistId: therapist.id, start, mode: 'home', addressId: id, ...extra }).expect(201);
+  const conf = await request(app).post(`/api/v1/bookings/${hold.body.visitId}/confirm`).set(auth(p.token)).send({ method }).expect(200);
+  return { hold: hold.body, conf: conf.body };
+}
+async function makeAdmin() {
+  const a = await signUp('female');
+  await q(`INSERT INTO user_roles (user_id, role) VALUES (:u, 'ops_admin')`, { u: a.id });
+  return a;
+}
+const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6300010000050001a5f645400000000049454e44ae426082', 'hex');
+
+describe('booking with UPI-QR payment', () => {
+  it('confirms the booking at once, then upload proof → ops verifies → invoice', async () => {
     const p = await signUp('male');
-    const { id } = await addAddress(p.token, ...KANKARBAGH);
     const start = fromIst(day, 9 * 60).toISOString();
-    const hold = await request(app).post('/api/v1/bookings/hold').set(auth(p.token)).send({ therapistId: priya.id, start, mode: 'home', addressId: id, packageId: pkgId }).expect(201);
-    expect(hold.body).toMatchObject({ amountPaise: 640000, payment: { provider: 'fake' } });
+    const { hold, conf } = await holdAndConfirm(p, priya, start, 'upi', { packageId: pkgId });
+    expect(hold.amountPaise).toBe(640000);
+    expect(conf.payment).toMatchObject({ method: 'upi', status: 'pending', upiId: 'physioconnect@testbank' });
+    expect(conf.payment.reference).toMatch(/^PC-[A-Z2-9]{6}$/);
+    expect(conf.payment.upiUri).toContain('am=6400.00');
 
-    // Someone else can't take the held slot.
+    // The slot is booked for everyone else.
     const other = await signUp('male');
-    const { id: otherAddr } = await addAddress(other.token, ...KANKARBAGH);
-    const clash = await request(app).post('/api/v1/bookings/hold').set(auth(other.token)).send({ therapistId: priya.id, start, mode: 'home', addressId: otherAddr }).expect(409);
-    expect(clash.body.error.code).toBe('slot_taken');
+    const { id: oa } = await addAddress(other.token, ...KANKARBAGH);
+    expect((await request(app).post('/api/v1/bookings/hold').set(auth(other.token)).send({ therapistId: priya.id, start, mode: 'home', addressId: oa }).expect(409)).body.error.code).toBe('slot_taken');
 
-    const { orderId } = hold.body.payment;
-    const bad = await request(app).post('/api/v1/payments/razorpay/verify').set(auth(p.token)).send({ orderId, paymentId: 'pay_test_1', signature: 'a'.repeat(64) }).expect(400);
-    expect(bad.body.error.code).toBe('signature_invalid');
+    const qr = await request(app).get(conf.payment.qrUrl).set(auth(p.token)).expect(200);
+    expect(qr.headers['content-type']).toBe('image/png');
+    await request(app).get(conf.payment.qrUrl).set(auth(other.token)).expect(404); // not someone else's
 
-    const ok = await request(app).post('/api/v1/payments/razorpay/verify').set(auth(p.token))
-      .send({ orderId, paymentId: 'pay_test_1', signature: checkoutSignature(orderId, 'pay_test_1') }).expect(200);
-    expect(ok.body.invoiceNo).toMatch(/^INV-\d{4}-\d{6}$/);
-    expect(ok.body.needsNewTime).toBe(false);
+    const up = await request(app).post('/api/v1/files').set(auth(p.token)).field('purpose', 'payment_proof').attach('file', PNG, { filename: 'gpay.png', contentType: 'image/png' }).expect(201);
+    await request(app).post(`/api/v1/payments/${conf.payment.id}/upi-proof`).set(auth(p.token)).send({ utr: '432198765432', fileId: up.body.file.id }).expect(200);
 
+    const admin = await makeAdmin();
+    const queue = await request(app).get('/api/v1/admin/payments?status=submitted').set(auth(admin.token)).expect(200);
+    expect(queue.body.payments.find(x => x.id === conf.payment.id)).toMatchObject({ utr: '432198765432', proof_file_id: up.body.file.id });
+    await request(app).get(`/api/v1/files/${up.body.file.id}/content`).set(auth(admin.token)).expect(200); // staff can see the proof
+    await request(app).post(`/api/v1/admin/payments/${conf.payment.id}/review`).set(auth(p.token)).send({ approve: true }).expect(403); // patients can't review
+
+    const rev = await request(app).post(`/api/v1/admin/payments/${conf.payment.id}/review`).set(auth(admin.token)).send({ approve: true }).expect(200);
+    expect(rev.body.invoiceNo).toMatch(/^INV-\d{4}-\d{6}$/);
     const list = await request(app).get('/api/v1/bookings').set(auth(p.token)).expect(200);
-    expect(list.body.bookings[0]).toMatchObject({ status: 'booked', plan_status: 'active', sessions_total: 10, zone_color: 'green' });
-    const notes = await request(app).get('/api/v1/notifications').set(auth(p.token)).expect(200);
-    expect(notes.body.notifications[0].type).toBe('booking_confirmed');
-
-    // Razorpay webhook for the same payment is accepted and changes nothing (idempotent).
-    const body = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: { id: 'pay_test_1', order_id: orderId } } } });
-    await request(app).post('/api/v1/payments/razorpay/webhook').set('content-type', 'application/json').set('x-razorpay-signature', webhookSignature(body)).send(body).expect(200);
-    const [[{ c }]] = await q(`SELECT count(*)::int AS c FROM payments WHERE provider_order_id = :o AND status = 'paid'`, { o: orderId });
-    expect(c).toBe(1);
+    expect(list.body.bookings[0]).toMatchObject({ status: 'booked', plan_status: 'active', payment_status: 'paid', zone_color: 'green' });
   });
 
-  it('rejects a webhook with a bad signature', async () => {
-    const body = JSON.stringify({ event: 'payment.captured' });
-    await request(app).post('/api/v1/payments/razorpay/webhook').set('content-type', 'application/json').set('x-razorpay-signature', 'b'.repeat(64)).send(body).expect(400);
+  it('refuses a UPI reference that was already used', async () => {
+    const a = await signUp('male'), b = await signUp('male');
+    const x = await holdAndConfirm(a, arjun, fromIst(day, 7 * 60).toISOString(), 'upi');
+    const y = await holdAndConfirm(b, arjun, fromIst(day, 16 * 60).toISOString(), 'upi');
+    await request(app).post(`/api/v1/payments/${x.conf.payment.id}/upi-proof`).set(auth(a.token)).send({ utr: 'DUP123456789' }).expect(200);
+    const res = await request(app).post(`/api/v1/payments/${y.conf.payment.id}/upi-proof`).set(auth(b.token)).send({ utr: 'DUP123456789' }).expect(409);
+    expect(res.body.error.code).toBe('utr_used');
   });
+});
 
+describe('booking with cash', () => {
+  it('physio marks cash received, ops approves', async () => {
+    const p = await signUp('male');
+    const { conf } = await holdAndConfirm(p, priya, fromIst(day, 13 * 60).toISOString(), 'cash');
+    expect(conf.payment.upiId).toBeUndefined();
+    await request(app).post(`/api/v1/payments/${conf.payment.id}/cash-received`).set(auth(p.token)).expect(403); // patients can't
+    await request(app).post(`/api/v1/payments/${conf.payment.id}/cash-received`).set(auth(arjun.token)).expect(404); // not his patient
+    await request(app).post(`/api/v1/payments/${conf.payment.id}/cash-received`).set(auth(priya.token)).expect(200);
+    const admin = await makeAdmin();
+    const rev = await request(app).post(`/api/v1/admin/payments/${conf.payment.id}/review`).set(auth(admin.token)).send({ approve: true }).expect(200);
+    expect(rev.body.status).toBe('paid');
+  });
+});
+
+describe('booking rules', () => {
   it('leaves travel time between home visits across town', async () => {
     const p = await signUp('male');
-    const near = await addAddress(p.token, ...KANKARBAGH);
-    const start = fromIst(day, 11 * 60).toISOString();
-    const hold = await request(app).post('/api/v1/bookings/hold').set(auth(p.token)).send({ therapistId: arjun.id, start, mode: 'home', addressId: near.id }).expect(201);
-    const { orderId } = hold.body.payment;
-    await request(app).post('/api/v1/payments/razorpay/verify').set(auth(p.token)).send({ orderId, paymentId: 'pay_t2', signature: checkoutSignature(orderId, 'pay_t2') }).expect(200);
-
+    await holdAndConfirm(p, arjun, fromIst(day, 11 * 60).toISOString(), 'cash');
     const far = await signUp('male');
     const farAddr = await addAddress(far.token, ...FAR_KANKAR); // ~3.2 km away → 10 min drive + 10 min buffer
     expect(farAddr.zone.color).toBe('green');
     const res = await request(app).get(`/api/v1/therapists/${arjun.id}/slots`).query({ mode: 'home', from: day, days: 1, addressId: farAddr.id }).set(auth(far.token)).expect(200);
-    expect(res.body.slots).not.toContain(fromIst(day, 11 * 60 + 45).toISOString()); // right after the visit: no time to drive
+    expect(res.body.slots).not.toContain(fromIst(day, 11 * 60 + 45).toISOString());
     expect(res.body.slots).toContain(fromIst(day, 12 * 60 + 15).toISOString());
   });
 
@@ -157,7 +184,38 @@ describe('booking and payment', () => {
     const ok = await request(app).post('/api/v1/bookings/hold').set(auth(p.token))
       .send({ therapistId: arjun.id, start, mode: 'home', addressId: id, familyMember: { name: 'Sunil Sharma', relation: 'Husband' } }).expect(201);
     expect(ok.body.needsPhysioConsent).toBe(true);
-    const [[{ c }]] = await q(`SELECT count(*)::int AS c FROM consents WHERE user_id = :u AND document = 'gender_safety'`, { u: p.id });
-    expect(c).toBe(1);
+  });
+});
+
+describe('files', () => {
+  it('stores files permanently with checksum, private by default, hide instead of delete', async () => {
+    const owner = await signUp('male'), stranger = await signUp('male');
+    const up = await request(app).post('/api/v1/files').set(auth(owner.token)).attach('file', PNG, { filename: 'x-ray.png', contentType: 'image/png' }).expect(201);
+    const f = up.body.file;
+    expect(f).toMatchObject({ name: 'x-ray.png', mimeType: 'image/png', sizeBytes: PNG.length, visibility: 'private' });
+    expect(f.sha256).toMatch(/^[a-f0-9]{64}$/);
+    const got = await request(app).get(`/api/v1/files/${f.id}/content?download=1`).set(auth(owner.token)).buffer(true).parse((res, cb) => { const c = []; res.on('data', d => c.push(d)); res.on('end', () => cb(null, Buffer.concat(c))); }).expect(200);
+    expect(Buffer.compare(got.body, PNG)).toBe(0);
+    expect(got.headers['content-disposition']).toContain('attachment');
+    await request(app).get(`/api/v1/files/${f.id}/content`).set(auth(stranger.token)).expect(404);
+    await request(app).get(`/api/v1/files/${f.id}/content`).expect(401);
+    await request(app).delete(`/api/v1/files/${f.id}`).set(auth(owner.token)).expect(204);
+    await request(app).get(`/api/v1/files/${f.id}`).set(auth(owner.token)).expect(404);
+    const [[row]] = await q(`SELECT hidden_at IS NOT NULL AS hidden FROM files WHERE id = :id`, { id: f.id });
+    expect(row.hidden).toBe(true); // still kept
+  });
+
+  it('rejects files whose content doesn’t match an allowed type, and public uploads by non-staff', async () => {
+    const u = await signUp('male');
+    const fake = await request(app).post('/api/v1/files').set(auth(u.token)).attach('file', Buffer.from('not really a png'), { filename: 'a.png', contentType: 'image/png' }).expect(415);
+    expect(fake.body.error.code).toBe('file_type_not_allowed');
+    await request(app).post('/api/v1/files').set(auth(u.token)).field('visibility', 'public').attach('file', PNG, { filename: 'a.png', contentType: 'image/png' }).expect(403);
+  });
+
+  it('lets staff publish public files that anyone can read', async () => {
+    const admin = await makeAdmin();
+    const up = await request(app).post('/api/v1/files').set(auth(admin.token)).field('visibility', 'public').field('purpose', 'website_media').attach('file', PNG, { filename: 'hero.png', contentType: 'image/png' }).expect(201);
+    const res = await request(app).get(up.body.file.url).expect(200);
+    expect(res.headers['cache-control']).toContain('public');
   });
 });

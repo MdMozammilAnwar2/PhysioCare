@@ -28,6 +28,11 @@ export default function Bookings() {
             <Text style={{ color: C.green, fontWeight: '700', textTransform: 'capitalize' }}>{b.status}</Text>
           </View>
           <Text style={s.muted}>{b.therapist_name} · {b.mode}{b.sessions_total > 1 ? ` · ${b.sessions_total}-session plan` : ''}{b.zone_name ? ` · ${b.zone_name}` : ''}</Text>
+          {b.payment_id && (
+            <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/payment/[id]', params: { id: b.payment_id! } })} style={{ color: C.brand, fontWeight: '700' }}>
+              {b.payment_method === 'upi' ? 'UPI' : 'Cash'} · {({ pending: 'payment due', submitted: 'checking payment', paid: 'paid', rejected: 'payment needs attention' } as Record<string, string>)[b.payment_status ?? 'pending']} ›
+            </Text>
+          )}
         </Card>
       ))}
       <Button title="Sign out" variant="ghost" onPress={async () => { await tokens.clear(); router.replace('/'); }} />

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { api, ApiError, isSignedIn, payWithRazorpay, rupees, type Booking, type Match, type Package, type Zone } from './api';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { api, ApiError, isSignedIn, rupees, type Booking, type Match, type Package, type Payment, type Zone } from './api';
 import { captureAttribution, draft, pendingAttribution } from './booking-state';
 import { Button, Card, Chips, ErrorText, Field, Page, ZonePill } from './ui';
 
@@ -264,10 +264,8 @@ export function Time() {
     setError(null); setBusy(true);
     try {
       const hold = await api.hold({ therapistId: d.therapistId, start: slot, mode: d.mode, addressId: d.addressId, packageId: pkg === 'single' ? undefined : pkg, familyMember: d.requiresFamilyAndConsent ? fm : undefined });
-      const me = await api.me();
-      const done = await payWithRazorpay(hold, { contact: me.user.phone, name: me.user.name ?? undefined });
-      draft.set({ confirmation: { ...done, start: slot, amountPaise: hold.amountPaise } });
-      nav('/book/done');
+      draft.set({ hold: { visitId: hold.visitId, amountPaise: hold.amountPaise, start: slot, holdExpiresAt: hold.holdExpiresAt } });
+      nav('/book/pay');
     } catch (e) { setError(msg(e)); if (e instanceof ApiError && e.code === 'slot_taken') setDay(day); } finally { setBusy(false); }
   }
 
@@ -302,8 +300,8 @@ export function Time() {
       <Card>
         <div className="flex justify-between text-lg"><span className="font-bold">Total</span><span className="font-extrabold">{rupees(amount)}</span></div>
         <ErrorText error={error} />
-        <Button variant="dark" disabled={busy || !slot} onClick={pay}>{busy ? 'Processing…' : `Pay ${rupees(amount)}`}</Button>
-        <p className="text-xs text-sub">UPI, card or net banking via Razorpay. Your slot is held for 10 minutes. Each visit is protected for 7 days.</p>
+        <Button variant="dark" disabled={busy || !slot} onClick={pay}>{busy ? 'Holding your slot…' : 'Continue to payment'}</Button>
+        <p className="text-xs text-sub">Pay by UPI (scan our QR) or in cash at the visit. Your slot is held for 10 minutes.</p>
       </Card>
     </Page>
   );
@@ -315,19 +313,86 @@ const PlanOption = ({ on, onClick, title, sub, price }: { on: boolean; onClick: 
   </button>
 );
 
-// ---------- Done ----------
-export function Done() {
+// ---------- Choose how to pay (booking is confirmed here) ----------
+export function ChoosePayment() {
+  const nav = useNavigate();
   const d = draft.get();
-  const c = d.confirmation;
-  if (!c) return <Navigate to="/bookings" replace />;
+  const [method, setMethod] = useState<'upi' | 'cash'>('upi');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!d.hold) return <Navigate to="/bookings" replace />;
+  const h = d.hold;
+  async function confirm() {
+    setError(null); setBusy(true);
+    try {
+      const r = await api.confirm(h.visitId, method);
+      draft.clear();
+      nav(`/payments/${r.payment.id}?new=1`);
+    } catch (e) { setError(msg(e)); } finally { setBusy(false); }
+  }
   return (
-    <Page kicker="Booking confirmed" title={c.needsNewTime ? 'Payment received · pick a new time' : 'You’re booked'} sub={`Payment of ${rupees(c.amountPaise)} received. Invoice ${c.invoiceNo}.`}>
+    <Page kicker="Almost done" title="How will you pay?" sub={`${d.therapistName} · ${fmtDay(h.start)} · ${fmtTime(h.start)} · ${rupees(h.amountPaise)}`}>
       <Card>
-        <p><b>Physio:</b> {d.therapistName}</p>
-        <p><b>First visit:</b> {fmtDay(c.start)} · {fmtTime(c.start)}</p>
-        <p className="text-sm text-sub">On the day you’ll get a 4-digit check-in code. Share it only when your physio arrives.</p>
-        <Link to="/bookings" onClick={() => draft.clear()} className="h-12 rounded-xl bg-navy text-white font-bold flex items-center justify-center">My bookings</Link>
+        <PlanOption on={method === 'upi'} onClick={() => setMethod('upi')} title="UPI · scan our QR" sub="Google Pay, PhonePe, Paytm or any UPI app. Upload the screenshot after paying." price={h.amountPaise} />
+        <PlanOption on={method === 'cash'} onClick={() => setMethod('cash')} title="Cash at the visit" sub="Pay your physio. You’ll get a receipt in the app once we confirm it." price={h.amountPaise} />
+        <ErrorText error={error} />
+        <Button variant="dark" disabled={busy} onClick={confirm}>{busy ? 'Confirming…' : 'Confirm booking'}</Button>
       </Card>
+    </Page>
+  );
+}
+
+// ---------- Payment: QR, reference, upload proof, status ----------
+export function PaymentPage() {
+  const { id = '' } = useParams();
+  const isNew = new URLSearchParams(useLocation().search).get('new') === '1';
+  const [p, setP] = useState<Payment | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
+  const [utr, setUtr] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => api.payment(id).then(r => { setP(r.payment); if (r.payment.qrUrl && r.payment.status !== 'paid') api.imageUrl(r.payment.qrUrl).then(setQr).catch(() => undefined); }).catch(e => setError(msg(e)));
+  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function submit() {
+    if (!utr.trim() && !file) return setError('Add the UPI reference number or the screenshot.');
+    setError(null); setBusy(true);
+    try {
+      const uploaded = file ? await api.upload(file, 'payment_proof') : null;
+      await api.upiProof(id, { utr: utr.trim() || undefined, fileId: uploaded?.id });
+      await load();
+    } catch (e) { setError(msg(e)); } finally { setBusy(false); }
+  }
+  if (!p) return <Page title="Payment"><ErrorText error={error} />{!error && <p className="text-sub">Loading…</p>}</Page>;
+  const label = { pending: 'Waiting for payment', submitted: 'Checking your payment', paid: 'Paid', rejected: 'Needs attention' }[p.status];
+  return (
+    <Page kicker={isNew ? 'You’re booked' : 'Payment'} title={`${rupees(p.amountPaise)} · ${label}`} sub={`Reference ${p.reference}`}>
+      {p.status === 'paid' && <Card><p className="font-bold text-success-ink">Payment confirmed. Invoice {p.invoiceNo}.</p></Card>}
+      {p.status === 'rejected' && <Card><p className="font-bold text-danger-ink">We couldn’t confirm this payment.</p><p className="text-sub">{p.reviewNote}</p></Card>}
+      {p.method === 'cash' && p.status !== 'paid' && <Card><p className="font-bold">Pay {rupees(p.amountPaise)} in cash to your physio at the visit.</p><p className="text-sub text-sm">They’ll mark it received, and your receipt appears here once we confirm it.</p></Card>}
+      {p.method === 'upi' && ['pending', 'rejected'].includes(p.status) && (
+        <>
+          <Card className="items-center text-center">
+            <h2 className="text-xl font-bold">1 · Scan and pay</h2>
+            {qr ? <img src={qr} alt={`UPI QR code to pay ${rupees(p.amountPaise)} to ${p.payeeName}`} className="w-64 h-64" /> : <div className="w-64 h-64 rounded-2xl bg-canvas" />}
+            <p className="text-sm">Pay <b>{rupees(p.amountPaise)}</b> to <b>{p.upiId}</b> ({p.payeeName})</p>
+            <p className="text-sm text-sub">Write <b>{p.reference}</b> in the payment note.</p>
+            {p.upiUri && <a href={p.upiUri} className="sm:hidden h-12 px-6 rounded-xl bg-brand text-white font-bold flex items-center">Open UPI app</a>}
+          </Card>
+          <Card>
+            <h2 className="text-xl font-bold">2 · Send us the proof</h2>
+            <Field label="UPI reference number (UTR, 12 digits)" value={utr} onChange={e => setUtr(e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 32))} inputMode="numeric" />
+            <label className="flex flex-col gap-1.5 text-sm font-semibold text-sub">Payment screenshot
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/heic,application/pdf" onChange={e => setFile(e.target.files?.[0] ?? null)} className="text-ink" />
+            </label>
+            <ErrorText error={error} />
+            <Button disabled={busy} onClick={submit}>{busy ? 'Sending…' : 'Submit payment details'}</Button>
+          </Card>
+        </>
+      )}
+      {p.status === 'submitted' && <Card><p className="font-bold">Thanks! We’re checking your payment.</p><p className="text-sub text-sm">You’ll get a notification when it’s confirmed, usually within a few hours.</p></Card>}
+      <Link to="/bookings" className="text-brand font-bold">My bookings ›</Link>
     </Page>
   );
 }
@@ -347,6 +412,11 @@ export function Bookings() {
             <div><p className="text-lg font-extrabold">{fmtDay(b.starts_at)} · {fmtTime(b.starts_at)}</p><p className="text-sub text-sm">{b.therapist_name} · {b.mode}{b.sessions_total > 1 ? ` · ${b.sessions_total}-session plan` : ''}</p></div>
             <div className="flex items-center gap-2">{b.zone_color && <ZonePill color={b.zone_color as 'green'} name={b.zone_name} />}<span className="text-sm font-bold text-success-ink capitalize">{b.status}</span></div>
           </div>
+          {b.payment_id && (
+            <Link to={`/payments/${b.payment_id}`} className="text-sm font-bold text-brand">
+              {b.payment_method === 'upi' ? 'UPI' : 'Cash'} · {{ pending: 'payment due', submitted: 'checking payment', paid: 'paid', rejected: 'payment needs attention' }[b.payment_status ?? 'pending']} ›
+            </Link>
+          )}
         </Card>
       ))}
     </Page>

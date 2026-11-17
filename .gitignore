@@ -10,3 +10,5 @@ coverage/
 .expo/
 .vite/
 apps/*/.claude/
+apps/api/storage/
+apps/api/storage-test/

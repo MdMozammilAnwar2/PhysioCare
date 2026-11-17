@@ -26,6 +26,13 @@ try {
   }
   console.log(`Seeded ${CITIES.length} cities and ${PATNA_ZONES.length} Patna zones.`);
 
+  const upiId = (process.env.PAYMENT_UPI_ID || '').trim();
+  if (/^[\w.-]{2,256}@[a-zA-Z]{2,64}$/.test(upiId)) {
+    await sequelize.query(`UPDATE app_settings SET value = :v, updated_at = now() WHERE key = 'payment_upi'`,
+      { replacements: { v: JSON.stringify({ upiId, payeeName: process.env.PAYMENT_UPI_NAME || 'PhysioConnect' }) } });
+    console.log(`UPI for payments set to ${upiId}.`);
+  } else console.log('PAYMENT_UPI_ID not set: UPI payments stay off (cash only) until it is.');
+
   const phone = normalizeIndianPhone(process.env.SUPER_ADMIN_PHONE);
   if (!phone) {
     console.log('SUPER_ADMIN_PHONE not set or invalid: no super admin created.');

@@ -31,8 +31,10 @@ const post = <T>(p: string, b?: unknown) => raw<T>(p, { method: 'POST', body: JS
 export type Zone = { id: string; name: string; color: 'green' | 'blue' | 'yellow' | 'orange' | 'red'; lat?: number; lng?: number };
 export type Match = { id: string; name: string; gender: string; qualification: string; yearsExperience: number; specialisations: string[]; languages: string[]; rating: number | null; tier: string; distanceKm: number | null; pricePaise: number; requiresFamilyAndConsent: boolean };
 export type Package = { id: string; name: string; mode: string; sessions: number; price_paise: number; validity_days: number };
-export type Hold = { visitId: string; planId: string; amountPaise: number; holdExpiresAt: string; needsPhysioConsent: boolean; payment: { provider: 'razorpay' | 'fake'; keyId: string; orderId: string } };
-export type Booking = { id: string; mode: string; status: string; starts_at: string; therapist_name: string; sessions_total: number; plan_status: string; zone_name: string | null; zone_color: string | null };
+export type Hold = { visitId: string; planId: string; amountPaise: number; holdExpiresAt: string; needsPhysioConsent: boolean };
+export type Payment = { id: string; method: 'cash' | 'upi'; status: 'pending' | 'submitted' | 'paid' | 'rejected'; reference: string; amountPaise: number; upiId?: string; payeeName?: string; upiUri?: string; qrUrl?: string; invoiceNo?: string | null; reviewNote?: string | null };
+export type UploadedFile = { id: string; name: string; url: string };
+export type Booking = { id: string; mode: string; status: string; starts_at: string; therapist_name: string; sessions_total: number; plan_status: string; zone_name: string | null; zone_color: string | null; payment_id: string | null; payment_method: string | null; payment_status: string | null; payment_reference: string | null };
 
 export const api = {
   status: () => raw<{ version: string; maintenance: { enabled: boolean; message: string | null } }>('/status'),
@@ -54,30 +56,25 @@ export const api = {
   slots: (id: string, q: { mode: string; from: string; days: number; addressId?: string }) =>
     raw<{ slots: string[] }>(`/therapists/${id}/slots?${new URLSearchParams(Object.entries(q).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))}`),
   hold: (b: Record<string, unknown>) => post<Hold>('/bookings/hold', b),
-  verifyPayment: (b: { orderId: string; paymentId: string; signature: string }) => post<{ invoiceNo: string; needsNewTime: boolean }>('/payments/razorpay/verify', b),
-  simulatePayment: (orderId: string) => post<{ invoiceNo: string; needsNewTime: boolean }>('/dev/payments/simulate', { orderId }),
+  confirm: (visitId: string, method: 'cash' | 'upi') => post<{ visitId: string; payment: Payment }>(`/bookings/${visitId}/confirm`, { method }),
+  payment: (id: string) => raw<{ payment: Payment }>(`/payments/${id}`),
+  upiProof: (id: string, b: { utr?: string; fileId?: string }) => post<{ status: string }>(`/payments/${id}/upi-proof`, b),
+  // Multipart upload to the permanent file store.
+  upload: async (file: File, purpose = 'general') => {
+    const fd = new FormData(); fd.append('purpose', purpose); fd.append('file', file);
+    const res = await fetch('/api/v1/files', { method: 'POST', body: fd, headers: store.access ? { authorization: `Bearer ${store.access}` } : {} });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, body.error?.code ?? 'error', body.error?.message ?? 'Upload failed.');
+    return body.file as UploadedFile;
+  },
+  // Fetches a protected image (QR, proof) with the token and returns a local object URL for <img>.
+  imageUrl: async (path: string) => {
+    const res = await fetch(path, { headers: store.access ? { authorization: `Bearer ${store.access}` } : {} });
+    if (!res.ok) throw new ApiError(res.status, 'image_failed', 'Couldn’t load the image.');
+    return URL.createObjectURL(await res.blob());
+  },
   bookings: () => raw<{ bookings: Booking[] }>('/bookings'),
 };
 
 export const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
-// Razorpay Checkout (only when real keys are configured on the server).
-declare global { interface Window { Razorpay?: new (o: Record<string, unknown>) => { open: () => void } } }
-export async function payWithRazorpay(hold: Hold, prefill: { contact?: string; name?: string }) {
-  if (hold.payment.provider === 'fake') return api.simulatePayment(hold.payment.orderId);
-  if (!window.Razorpay) await new Promise<void>((ok, fail) => {
-    const s = document.createElement('script');
-    s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = () => ok(); s.onerror = () => fail(new Error('Could not load Razorpay.'));
-    document.body.appendChild(s);
-  });
-  return new Promise<{ invoiceNo: string; needsNewTime: boolean }>((resolve, reject) => {
-    const rzp = new window.Razorpay!({
-      key: hold.payment.keyId, order_id: hold.payment.orderId, amount: hold.amountPaise, currency: 'INR',
-      name: 'PhysioConnect', description: 'Physiotherapy booking', prefill, theme: { color: '#0A6CFF' },
-      handler: (r: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
-        api.verifyPayment({ orderId: r.razorpay_order_id, paymentId: r.razorpay_payment_id, signature: r.razorpay_signature }).then(resolve, reject),
-      modal: { ondismiss: () => reject(new ApiError(0, 'payment_cancelled', 'Payment was cancelled. Your slot is held for a few minutes.')) },
-    });
-    rzp.open();
-  });
-}

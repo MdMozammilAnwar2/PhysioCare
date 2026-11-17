@@ -42,6 +42,7 @@ const post = <T>(p: string, b?: unknown) => call<T>(p, { method: 'POST', body: J
 
 export type Zone = { id: string; name: string; color: string; lat?: number; lng?: number };
 export type Match = { id: string; name: string; qualification: string; yearsExperience: number; rating: number | null; distanceKm: number | null; pricePaise: number; requiresFamilyAndConsent: boolean };
+export type Payment = { id: string; method: 'cash' | 'upi'; status: 'pending' | 'submitted' | 'paid' | 'rejected'; reference: string; amountPaise: number; upiId?: string; payeeName?: string; upiUri?: string; qrUrl?: string; invoiceNo?: string | null; reviewNote?: string | null };
 export type Status = { status: string; version: string; maintenance: { enabled: boolean; message: string | null }; minAppVersion: Record<string, string> | null };
 
 export const api = {
@@ -61,9 +62,24 @@ export const api = {
   match: (b: object) => post<{ matches: Match[] }>('/therapists/match', b),
   therapist: (id: string) => call<{ therapist: { packages: { id: string; name: string; mode: string; sessions: number; price_paise: number }[]; prices: { mode: string; price_paise: number }[] } }>(`/therapists/${id}`),
   slots: (id: string, q: Record<string, string>) => call<{ slots: string[] }>(`/therapists/${id}/slots?${new URLSearchParams(q)}`),
-  hold: (b: object) => post<{ amountPaise: number; payment: { provider: string; orderId: string } }>('/bookings/hold', b),
-  simulatePayment: (orderId: string) => post<{ invoiceNo: string; needsNewTime: boolean }>('/dev/payments/simulate', { orderId }),
-  bookings: () => call<{ bookings: { id: string; status: string; starts_at: string; therapist_name: string; mode: string; sessions_total: number; zone_name: string | null }[] }>('/bookings'),
+  hold: (b: object) => post<{ visitId: string; amountPaise: number; holdExpiresAt: string }>('/bookings/hold', b),
+  confirm: (visitId: string, method: 'cash' | 'upi') => post<{ payment: Payment }>(`/bookings/${visitId}/confirm`, { method }),
+  payment: (id: string) => call<{ payment: Payment }>(`/payments/${id}`),
+  upiProof: (id: string, b: { utr?: string; fileId?: string }) => post<{ status: string }>(`/payments/${id}/upi-proof`, b),
+  // Multipart upload to the permanent file store. React Native's FormData takes { uri, name, type }.
+  upload: async (file: { uri: string; name: string; type: string }, purpose = 'general') => {
+    const fd = new FormData();
+    fd.append('purpose', purpose);
+    fd.append('file', file as unknown as Blob);
+    const res = await fetch(`${BASE}/files`, { method: 'POST', body: fd, headers: access ? { authorization: `Bearer ${access}` } : {} });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, body.error?.code ?? 'error', body.error?.message ?? 'Upload failed.');
+    return body.file as { id: string; url: string };
+  },
+  // Image source for protected images (QR code): <Image source={api.imageSource(path)} />.
+  imageSource: (path: string) => ({ uri: `${BASE.replace(/\/api\/v1$/, '')}${path}`, headers: access ? { Authorization: `Bearer ${access}` } : undefined }),
+
+  bookings: () => call<{ bookings: { id: string; status: string; starts_at: string; therapist_name: string; mode: string; sessions_total: number; zone_name: string | null; payment_id: string | null; payment_method: string | null; payment_status: string | null }[] }>('/bookings'),
 };
 
 export const rupees = (p: number) => `₹${Math.round(p / 100).toLocaleString('en-IN')}`;
@@ -80,4 +96,4 @@ export function fmtDay(iso: string) {
 }
 
 // Booking in progress (in memory; the flow is short).
-export const draft: { mode?: 'home' | 'video'; addressId?: string; zone?: Zone; therapistId?: string; therapistName?: string; requiresConsent?: boolean; family?: boolean; done?: { invoiceNo: string; start: string; amountPaise: number } } = {};
+export const draft: { mode?: 'home' | 'video'; addressId?: string; zone?: Zone; therapistId?: string; therapistName?: string; requiresConsent?: boolean; family?: boolean; hold?: { visitId: string; start: string; amountPaise: number } } = {};

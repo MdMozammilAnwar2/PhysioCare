@@ -7,7 +7,7 @@ export type BookingDraft = {
   therapistId?: string;
   therapistName?: string;
   requiresFamilyAndConsent?: boolean;
-  confirmation?: { invoiceNo: string; needsNewTime: boolean; start: string; amountPaise: number };
+  hold?: { visitId: string; amountPaise: number; start: string; holdExpiresAt: string };
 };
 const KEY = 'pc.booking';
 export const draft = {

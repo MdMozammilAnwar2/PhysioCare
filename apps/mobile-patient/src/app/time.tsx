@@ -41,13 +41,8 @@ export default function Time() {
     setError(null); setBusy(true);
     try {
       const hold = await api.hold({ therapistId: tid, start: slot, mode: draft.mode, addressId: draft.addressId, packageId: plan === 'single' ? undefined : plan, familyMember: draft.requiresConsent ? fm : undefined });
-      if (hold.payment.provider !== 'fake') {
-        // Native Razorpay checkout needs a development build (react-native-razorpay); planned before launch.
-        throw new ApiError(0, 'payment_unavailable', 'Payment in the app is coming soon. Please complete this booking on the website.');
-      }
-      const done = await api.simulatePayment(hold.payment.orderId);
-      draft.done = { invoiceNo: done.invoiceNo, start: slot, amountPaise: hold.amountPaise };
-      router.replace('/done');
+      draft.hold = { visitId: hold.visitId, start: slot, amountPaise: hold.amountPaise };
+      router.push('/pay');
     } catch (e) { setError(e instanceof ApiError ? e.message : 'Something went wrong.'); } finally { setBusy(false); }
   }
 
@@ -91,8 +86,8 @@ export default function Time() {
       <Card>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.h2}>Total</Text><Text style={[s.h2, { fontWeight: '800' }]}>{rupees(amount)}</Text></View>
         <ErrorText error={error} />
-        <Button title={`Pay ${rupees(amount)}`} variant="dark" onPress={pay} busy={busy} disabled={!slot} />
-        <Text style={s.muted}>Your slot is held for 10 minutes. Each visit is protected for 7 days.</Text>
+        <Button title="Continue to payment" variant="dark" onPress={pay} busy={busy} disabled={!slot} />
+        <Text style={s.muted}>Pay by UPI (scan our QR) or in cash at the visit. Your slot is held for 10 minutes.</Text>
       </Card>
     </Screen>
   );

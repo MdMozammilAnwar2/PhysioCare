@@ -7,8 +7,9 @@ import { zoneForPoint } from '../lib/geo.js';
 import { asyncHandler, requireAuth, requireRole, validate } from '../middleware/index.js';
 import { matchTherapists } from '../services/matching.js';
 import { freeSlots } from '../services/slots.js';
-import { confirmPayment, holdBooking } from '../services/booking.js';
-import { verifyCheckoutSignature, verifyWebhookSignature } from '../services/payments.js';
+import QRCode from 'qrcode';
+import { ADMIN_ROLES } from '@physioconnect/shared';
+import { confirmBooking, holdBooking, markCashReceived, reviewPayment, submitUpiProof, upiSettings, upiUri } from '../services/booking.js';
 
 const one = async (sql, replacements) => (await sequelize.query(sql, { replacements }))[0][0];
 const modeField = z.enum(['home', 'clinic', 'video']);
@@ -69,36 +70,74 @@ bookingsRouter.post('/hold', validate(z.object({
 
 bookingsRouter.get('/', asyncHandler(async (req, res) => {
   const [rows] = await sequelize.query(`SELECT v.id, v.mode, v.status, lower(v.during) AS starts_at, upper(v.during) AS ends_at, u.name AS therapist_name,
-      p.sessions_total, p.status AS plan_status, z.name AS zone_name, z.color AS zone_color
-    FROM visits v JOIN users u ON u.id = v.therapist_id LEFT JOIN plans p ON p.id = v.plan_id LEFT JOIN zones z ON z.id = v.zone_id
+      p.sessions_total, p.status AS plan_status, z.name AS zone_name, z.color AS zone_color,
+      pay.id AS payment_id, pay.method AS payment_method, pay.status AS payment_status, pay.reference AS payment_reference, pay.amount_paise
+    FROM visits v JOIN users u ON u.id = v.therapist_id LEFT JOIN plans p ON p.id = v.plan_id LEFT JOIN zones z ON z.id = v.zone_id LEFT JOIN payments pay ON pay.plan_id = v.plan_id
     WHERE v.patient_id = :u AND v.status NOT IN ('held', 'cancelled') ORDER BY lower(v.during)`, { replacements: { u: req.user.id } });
   res.json({ bookings: rows });
 }));
 
-// ---------- payments ----------
-export const paymentsRouter = Router();
-
-// Called by the app after Razorpay Checkout succeeds.
-paymentsRouter.post('/razorpay/verify', requireAuth, validate(z.object({
-  orderId: z.string().min(6).max(64), paymentId: z.string().min(6).max(64), signature: z.string().max(128),
-})), asyncHandler(async (req, res) => {
-  const { orderId, paymentId, signature } = req.body;
-  const owner = await one(`SELECT patient_id FROM payments WHERE provider_order_id = :o`, { o: orderId });
-  if (!owner || owner.patient_id !== req.user.id) throw new HttpError(404, 'order_not_found', 'Payment not found.');
-  if (!verifyCheckoutSignature(orderId, paymentId, signature)) throw new HttpError(400, 'signature_invalid', 'We couldn’t verify this payment. If money was taken, it will be refunded.');
-  res.json(await confirmPayment({ orderId, paymentId }));
+// Patient picks Cash or UPI for a held slot; the booking is confirmed at once.
+bookingsRouter.post('/:visitId/confirm', validate(z.object({ method: z.enum(['cash', 'upi']) })), asyncHandler(async (req, res) => {
+  res.json(await confirmBooking({ patientId: req.user.id, visitId: req.params.visitId, method: req.body.method }));
 }));
 
-// Razorpay → server. Body is raw (see app.js) so the signature can be checked byte-for-byte.
-paymentsRouter.post('/razorpay/webhook', asyncHandler(async (req, res) => {
-  const raw = req.body instanceof Buffer ? req.body.toString('utf8') : '';
-  if (!verifyWebhookSignature(raw, req.get('x-razorpay-signature'))) throw new HttpError(400, 'signature_invalid', 'Bad signature.');
-  const event = JSON.parse(raw);
-  if (event.event === 'payment.captured' || event.event === 'order.paid') {
-    const p = event.payload?.payment?.entity;
-    if (p?.order_id) await confirmPayment({ orderId: p.order_id, paymentId: p.id, raw: event });
-  }
-  res.json({ ok: true });
+// ---------- payments (Cash, UPI-QR) ----------
+export const paymentsRouter = Router();
+paymentsRouter.use(requireAuth);
+const isAdmin = u => u.roles.some(r => ADMIN_ROLES.includes(r));
+
+async function paymentFor(req) {
+  const p = await one(`SELECT pay.*, pl.therapist_id FROM payments pay JOIN plans pl ON pl.id = pay.plan_id WHERE pay.id = :id`, { id: req.params.id });
+  if (!p || (p.patient_id !== req.user.id && p.therapist_id !== req.user.id && !isAdmin(req.user))) throw new HttpError(404, 'not_found', 'Payment not found.');
+  return p;
+}
+
+paymentsRouter.get('/:id', asyncHandler(async (req, res) => {
+  const p = await paymentFor(req);
+  const upi = p.method === 'upi' ? await upiSettings() : null;
+  res.json({ payment: {
+    id: p.id, method: p.method, status: p.status, reference: p.reference, amountPaise: p.amount_paise, utr: p.utr,
+    proofFileId: p.proof_file_id, invoiceNo: p.invoice_no, reviewNote: p.review_note,
+    ...(upi?.upiId ? { upiId: upi.upiId, payeeName: upi.payeeName, upiUri: upiUri(upi, p.amount_paise, p.reference), qrUrl: `/api/v1/payments/${p.id}/qr.png` } : {}),
+  } });
+}));
+
+// QR code for the exact amount and reference; any UPI app can scan it.
+paymentsRouter.get('/:id/qr.png', asyncHandler(async (req, res) => {
+  const p = await paymentFor(req);
+  const upi = await upiSettings();
+  if (p.method !== 'upi' || !upi.upiId) throw new HttpError(404, 'not_found', 'No UPI QR for this payment.');
+  const png = await QRCode.toBuffer(upiUri(upi, p.amount_paise, p.reference), { width: 480, margin: 2, color: { dark: '#0A1F44', light: '#FFFFFF' } });
+  res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'private, no-store' }).send(png);
+}));
+
+paymentsRouter.post('/:id/upi-proof', validate(z.object({
+  utr: z.string().trim().regex(/^[A-Za-z0-9]{6,32}$/, 'Enter the UPI reference number from your payment app.').optional(),
+  fileId: z.string().uuid().optional(),
+}).refine(b => b.utr || b.fileId, 'Add the UPI reference number or a screenshot.')), asyncHandler(async (req, res) => {
+  res.json(await submitUpiProof({ patientId: req.user.id, paymentId: req.params.id, ...req.body }));
+}));
+
+paymentsRouter.post('/:id/cash-received', requireRole('therapist'), asyncHandler(async (req, res) => {
+  res.json(await markCashReceived({ therapistId: req.user.id, paymentId: req.params.id }));
+}));
+
+// ---------- admin: payment verification ----------
+export const adminPaymentsRouter = Router();
+adminPaymentsRouter.use(requireAuth, requireRole('ops_admin', 'finance', 'super_admin'));
+
+adminPaymentsRouter.get('/', asyncHandler(async (req, res) => {
+  const status = ['pending', 'submitted', 'paid', 'rejected'].includes(String(req.query.status)) ? String(req.query.status) : 'submitted';
+  const [rows] = await sequelize.query(`SELECT pay.id, pay.method, pay.status, pay.reference, pay.amount_paise, pay.utr, pay.proof_file_id, pay.submitted_at,
+      pu.name AS patient_name, tu.name AS therapist_name
+    FROM payments pay JOIN plans pl ON pl.id = pay.plan_id JOIN users pu ON pu.id = pay.patient_id JOIN users tu ON tu.id = pl.therapist_id
+    WHERE pay.status = :s ORDER BY pay.submitted_at NULLS LAST, pay.created_at LIMIT 200`, { replacements: { s: status } });
+  res.json({ payments: rows });
+}));
+
+adminPaymentsRouter.post('/:id/review', validate(z.object({ approve: z.boolean(), note: z.string().trim().max(300).optional() })), asyncHandler(async (req, res) => {
+  res.json(await reviewPayment({ admin: req.user, paymentId: req.params.id, approve: req.body.approve, note: req.body.note, ip: req.ip }));
 }));
 
 // ---------- notifications ----------
