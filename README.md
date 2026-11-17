@@ -25,6 +25,7 @@ npm run db:up                         # Postgres 17 + PostGIS on :5434, Redis on
 cp apps/api/.env.example apps/api/.env   # then set JWT_ACCESS_SECRET and OTP_SECRET
 npm run api:migrate
 npm run api:seed                      # cities, Patna zones, and the super admin (see below)
+npm run api:seed:demo                 # development only: 3 verified demo physios to book
 npm run api:dev                       # http://localhost:4000
 npm run admin:dev                     # http://localhost:5174
 npm run site:dev                      # http://localhost:5173
@@ -48,6 +49,16 @@ There is no sign-up, API or screen that creates a super admin. Set `SUPER_ADMIN_
 | POST | `/api/v1/auth/refresh` | — | Rotate refresh token; reuse of an old token ends the whole session |
 | POST | `/api/v1/auth/logout` | — | Revoke the session |
 | GET / PATCH | `/api/v1/me` | Bearer | Current user, roles, how they joined |
+| GET | `/api/v1/zones?city=Patna` | public | Zones with colour and centre |
+| GET / PUT | `/api/v1/patient/profile` | patient | Condition, procedure, preferences |
+| GET / POST | `/api/v1/patient/addresses` | patient | Addresses; POST returns the zone |
+| POST | `/api/v1/patient/consents` | patient | Record consents |
+| POST | `/api/v1/therapists/match` | patient | Top 3 physios (gender rule, zone, radius) |
+| GET | `/api/v1/therapists/:id`, `/:id/slots` | signed in | Profile, prices, packages; free slots |
+| POST | `/api/v1/bookings/hold` | patient | Hold a slot and create the payment order |
+| GET | `/api/v1/bookings` | patient | My bookings |
+| POST | `/api/v1/payments/razorpay/verify`, `/webhook` | patient / Razorpay | Confirm payment (idempotent) |
+| GET | `/api/v1/notifications` | signed in | In-app notifications |
 
 ## Versioning
 

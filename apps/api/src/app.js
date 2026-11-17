@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.js';
 import { meRouter } from './routes/me.js';
 import { patientRouter } from './routes/patient.js';
 import { bookingsRouter, notificationsRouter, paymentsRouter, therapistsRouter } from './routes/booking.js';
+import { devRouter, zonesRouter } from './routes/public.js';
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,8 @@ export function createApp() {
   app.use('/api/v1/bookings', bookingsRouter);
   app.use('/api/v1/payments', paymentsRouter);
   app.use('/api/v1/notifications', notificationsRouter);
+  app.use('/api/v1/zones', zonesRouter);
+  if (!config.isProd) app.use('/api/v1/dev', devRouter);
 
   app.use(notFound);
   app.use(errorHandler);

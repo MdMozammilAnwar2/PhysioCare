@@ -19,6 +19,7 @@
     "admin:dev": "npm run dev -w @physioconnect/web-admin",
     "site:dev": "npm run dev -w @physioconnect/web-site",
     "test": "npm test -w @physioconnect/api",
-    "build": "npm run build -w @physioconnect/web-admin && npm run build -w @physioconnect/web-site"
+    "build": "npm run build -w @physioconnect/web-admin && npm run build -w @physioconnect/web-site",
+    "api:seed:demo": "npm run seed:demo -w @physioconnect/api"
   }
 }

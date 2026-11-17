@@ -18,6 +18,9 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - Booking: slot hold (10 min) → Razorpay order → checkout signature verification or webhook → plan active, visit booked,
   invoice number, notification, attribution credit locked. Idempotent; late payments flag "pick a new time".
 - Fake payment provider for development and tests (same signature scheme as Razorpay).
+- Website booking flow: sign in with OTP (referral code and UTM captured), About you + consents, home or video,
+  area and zone check, top 3 physios with the family-present option, day and time, plan, Razorpay checkout, confirmation, My bookings.
+- Public `GET /api/v1/zones`; development-only payment simulator and demo physios (`npm run api:seed:demo`).
 
 ## [0.1.0] — Phase 0 · Foundations
 

@@ -10,7 +10,8 @@
     "migrate": "node --env-file-if-exists=.env scripts/migrate.js up",
     "migrate:down": "node --env-file-if-exists=.env scripts/migrate.js down",
     "seed": "node --env-file-if-exists=.env scripts/seed.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:demo": "node --env-file-if-exists=.env scripts/seed-demo.js"
   },
   "dependencies": {
     "@physioconnect/shared": "0.1.0",
