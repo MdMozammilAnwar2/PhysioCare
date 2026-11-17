@@ -1,5 +1,5 @@
 // Constants shared by the API, web apps and mobile apps.
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.2.1';
 
 // Roles. SUPER_ADMIN can only be created from the server environment (see apps/api/scripts/seed.js).
 export const ROLES = Object.freeze({

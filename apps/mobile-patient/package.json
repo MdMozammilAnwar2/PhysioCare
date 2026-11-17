@@ -1,9 +1,9 @@
 {
   "name": "@physioconnect/mobile-patient",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "expo-router/entry",
   "dependencies": {
-    "@physioconnect/shared": "0.2.0",
+    "@physioconnect/shared": "0.2.1",
     "expo": "~58.0.26",
     "expo-constants": "~58.0.16",
     "expo-image-picker": "~58.0.10",

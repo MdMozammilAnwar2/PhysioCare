@@ -1,7 +1,7 @@
 # PhysioConnect by Healthtropic
 
 Verified physiotherapy at home, matched by zone, safety rules and recovery needs.
-Version **0.2.0 · Phase 1 (Patient books and pays)**. See [CHANGELOG.md](CHANGELOG.md).
+Version **0.2.1 · Phase 1 + Cash/UPI payments and file storage**. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Repository
 
@@ -57,9 +57,16 @@ There is no sign-up, API or screen that creates a super admin. Set `SUPER_ADMIN_
 | POST | `/api/v1/patient/consents` | patient | Record consents |
 | POST | `/api/v1/therapists/match` | patient | Top 3 physios (gender rule, zone, radius) |
 | GET | `/api/v1/therapists/:id`, `/:id/slots` | signed in | Profile, prices, packages; free slots |
-| POST | `/api/v1/bookings/hold` | patient | Hold a slot and create the payment order |
+| POST | `/api/v1/bookings/hold` | patient | Hold a slot for 10 minutes |
+| POST | `/api/v1/bookings/:visitId/confirm` | patient | Confirm with `cash` or `upi`; returns the payment (reference, QR) |
 | GET | `/api/v1/bookings` | patient | My bookings |
-| POST | `/api/v1/payments/razorpay/verify`, `/webhook` | patient / Razorpay | Confirm payment (idempotent) |
+| GET | `/api/v1/payments/:id`, `/:id/qr.png` | patient, physio, staff | Payment status; UPI QR image |
+| POST | `/api/v1/payments/:id/upi-proof` | patient | UTR and/or screenshot file id |
+| POST | `/api/v1/payments/:id/cash-received` | physio | Cash collected at the visit |
+| GET / POST | `/api/v1/admin/payments`, `/:id/review` | ops, finance, super admin | Verification queue; approve or reject |
+| POST / GET | `/api/v1/files` | signed in | Upload (multipart `file`, `purpose`, `visibility`); list my files |
+| GET | `/api/v1/files/:id`, `/:id/content[?download=1]` | owner, staff, or public | Metadata; view or download |
+| DELETE | `/api/v1/files/:id` | owner, staff | Hide (files are never deleted) |
 | GET | `/api/v1/notifications` | signed in | In-app notifications |
 
 ## Versioning

@@ -5,6 +5,30 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [0.2.1] — Payments: Cash + UPI-QR · File storage
+
+### Changed
+- Payments no longer use Razorpay. Two methods: **Cash** at the visit and **UPI** by scanning PhysioConnect's QR.
+  - Picking a method confirms the booking at once; the payment stays `pending` with a reference like `PC-7K3M9Q`.
+  - UPI: the patient sees a QR for the exact amount (also an "Open UPI app" link), pays, then sends the UPI
+    reference (UTR) and/or a screenshot → `submitted`. A UTR can be used only once.
+  - Cash: the physio marks "cash received" → `submitted`.
+  - Ops / finance / super admin approve or reject in a queue; approval issues the invoice number, notifies the patient
+    and locks referral credit. Every decision is in the audit log.
+  - UPI stays off until `PAYMENT_UPI_ID` is set and `npm run api:seed` is run.
+- Website and patient app: "How will you pay?" step, payment page with QR, reference, UTR and screenshot upload,
+  payment status on My bookings.
+
+### Added
+- **File storage API** (`/api/v1/files`): upload (multipart), list, metadata, view/download, hide.
+  Files are kept permanently (hide, never delete), with owner, purpose, size and SHA-256 checksum.
+  Content is checked against the claimed type (JPG, PNG, WEBP, HEIC, PDF up to 15–25 MB; MP4, MOV up to 200 MB).
+  Private by default (owner + staff); only staff can publish public files (website images and videos).
+  Local disk now (`STORAGE_DIR`), S3-compatible storage can be added behind the same interface.
+
+### Removed
+- Razorpay checkout, webhook, development payment simulator and their settings.
+
 ## [0.2.0] — Phase 1 · Patient books and pays
 
 ### Added
@@ -26,8 +50,6 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - All web and mobile apps on React 19.3 (one React version across the monorepo).
 
 ### Known gaps
-- In-app Razorpay checkout needs a custom Expo development build (react-native-razorpay); until then the app asks
-  patients to pay on the website when real keys are set. The development payment simulator works in all apps.
 - Drive time is estimated (3 min/km + 10 min); Google Maps distance matrix comes later.
 - Zones are centre + radius until they can be drawn in the console.
 - Physio-side consent for the gender rule is recorded as needed; the physio app asks for it in Phase 2.
