@@ -54,9 +54,9 @@ export async function holdBooking({ patient, therapistId, start, mode, addressId
     { p: patient.id, t: therapistId, pkg: pkg?.id ?? null, m: mode, n: pkg ? pkg.sessions : 1, amt: amount, days: pkg?.validity_days ?? null }, transaction);
     let visit;
     try {
-      visit = await one(`INSERT INTO visits (therapist_id, patient_id, zone_id, mode, status, during, hold_expires_at, plan_id, address_id, family_member)
-        VALUES (:t, :p, :z, :m, 'held', tstzrange(:s, :e), now() + make_interval(mins => :hold), :plan, :addr, :fm) RETURNING id, hold_expires_at`,
-      { t: therapistId, p: patient.id, z: zone?.id ?? null, m: mode, s: startAt.toISOString(), e: end.toISOString(), hold: rules.paymentHoldMinutes, plan: plan.id, addr: address?.id ?? null, fm: familyMember ? JSON.stringify(familyMember) : null }, transaction);
+      visit = await one(`INSERT INTO visits (therapist_id, patient_id, zone_id, mode, status, during, hold_expires_at, plan_id, address_id, family_member, physio_consent)
+        VALUES (:t, :p, :z, :m, 'held', tstzrange(:s, :e), now() + make_interval(mins => :hold), :plan, :addr, :fm, :pc) RETURNING id, hold_expires_at`,
+      { t: therapistId, p: patient.id, z: zone?.id ?? null, m: mode, s: startAt.toISOString(), e: end.toISOString(), hold: rules.paymentHoldMinutes, plan: plan.id, addr: address?.id ?? null, fm: familyMember ? JSON.stringify(familyMember) : null, pc: rule === 'needs_family_and_consent' ? 'pending' : 'not_needed' }, transaction);
     } catch (e) {
       if (e.name === 'SequelizeExclusionConstraintError') throw new HttpError(409, 'slot_taken', 'That time was just taken. Pick another.');
       throw e;

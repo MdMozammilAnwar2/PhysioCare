@@ -6,6 +6,8 @@ import { addDays, fromIst, istDate } from '../src/lib/time.js';
 import { User, sequelize } from '../src/models/index.js';
 
 const app = createApp();
+// Other test files add physios to the same database; matching tests look only at the physios created here.
+const ours = ms => ms.map(m => m.id).filter(id => [priya.id, arjun.id].includes(id));
 let n = 0;
 const phone = () => `97${String(10000000 + ++n).padStart(8, '0')}`;
 const q = (sql, r) => sequelize.query(sql, { replacements: r });
@@ -58,7 +60,7 @@ describe('matching', () => {
     const p = await signUp('female');
     const { id } = await addAddress(p.token, ...KANKARBAGH);
     const alone = await request(app).post('/api/v1/therapists/match').set(auth(p.token)).send({ mode: 'home', addressId: id }).expect(200);
-    expect(alone.body.matches.map(m => m.id)).toEqual([priya.id]);
+    expect(ours(alone.body.matches)).toEqual([priya.id]);
     const family = await request(app).post('/api/v1/therapists/match').set(auth(p.token)).send({ mode: 'home', addressId: id, familyPresent: true }).expect(200);
     const a = family.body.matches.find(m => m.id === arjun.id);
     expect(a.requiresFamilyAndConsent).toBe(true);
@@ -69,7 +71,7 @@ describe('matching', () => {
     await request(app).put('/api/v1/patient/profile').set(auth(p.token)).send({ preferredGender: 'male' }).expect(200);
     const { id } = await addAddress(p.token, ...KANKARBAGH);
     const res = await request(app).post('/api/v1/therapists/match').set(auth(p.token)).send({ mode: 'home', addressId: id }).expect(200);
-    expect(res.body.matches.map(m => m.id)).toEqual([arjun.id]);
+    expect(ours(res.body.matches)).toEqual([arjun.id]);
   });
 
   it('refuses home visits in a red zone but allows video', async () => {
@@ -78,7 +80,7 @@ describe('matching', () => {
     const res = await request(app).post('/api/v1/therapists/match').set(auth(p.token)).send({ mode: 'home', addressId: id }).expect(409);
     expect(res.body.error.code).toBe('zone_closed');
     const video = await request(app).post('/api/v1/therapists/match').set(auth(p.token)).send({ mode: 'video' }).expect(200);
-    expect(video.body.matches.length).toBe(2);
+    expect(ours(video.body.matches)).toHaveLength(2);
   });
 });
 

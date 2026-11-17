@@ -9,6 +9,7 @@ import { matchTherapists } from '../services/matching.js';
 import { freeSlots } from '../services/slots.js';
 import QRCode from 'qrcode';
 import { ADMIN_ROLES } from '@physioconnect/shared';
+import { checkinCode } from '../services/visits.js';
 import { confirmBooking, holdBooking, markCashReceived, reviewPayment, submitUpiProof, upiSettings, upiUri } from '../services/booking.js';
 
 const one = async (sql, replacements) => (await sequelize.query(sql, { replacements }))[0][0];
@@ -146,4 +147,21 @@ notificationsRouter.use(requireAuth);
 notificationsRouter.get('/', asyncHandler(async (req, res) => {
   const [rows] = await sequelize.query(`SELECT id, type, title, body, data, read_at, created_at FROM notifications WHERE user_id = :u ORDER BY created_at DESC LIMIT 50`, { replacements: { u: req.user.id } });
   res.json({ notifications: rows });
+}));
+
+// ---------- patient: visit day ----------
+// The 4-digit code is shown only on the day of the visit, for visits that are booked or on the way.
+bookingsRouter.get('/:visitId/checkin-code', asyncHandler(async (req, res) => {
+  const v = await one(`SELECT id, status, lower(during) AS starts_at FROM visits WHERE id = :id AND patient_id = :u`, { id: req.params.visitId, u: req.user.id });
+  if (!v) throw new HttpError(404, 'not_found', 'Visit not found.');
+  if (!['booked', 'on_the_way'].includes(v.status)) throw new HttpError(409, 'no_code', 'There’s no check-in code for this visit.');
+  if (istDate(new Date(v.starts_at)) !== istDate(new Date())) throw new HttpError(409, 'not_today', 'Your code appears on the day of the visit.');
+  res.json({ code: checkinCode(v.id), note: 'Share it only when your physio is at your door.' });
+}));
+
+bookingsRouter.get('/:visitId/notes', asyncHandler(async (req, res) => {
+  const n = await one(`SELECT n.pain_score, n.measurements, n.exercises, n.notes, n.home_plan, n.created_at FROM session_notes n JOIN visits v ON v.id = n.visit_id
+    WHERE v.id = :id AND v.patient_id = :u`, { id: req.params.visitId, u: req.user.id });
+  if (!n) throw new HttpError(404, 'not_found', 'No notes for this visit yet.');
+  res.json({ notes: n });
 }));

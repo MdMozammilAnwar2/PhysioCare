@@ -5,6 +5,23 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [Unreleased] — Phase 2 · Therapist and the visit (0.3.0)
+
+### Added (API)
+- Therapist onboarding: profile and service area, six required documents (stored in the file store),
+  partner agreement v2.1 signature, submit for review.
+- Admin verification: queue, therapist detail with documents and agreement, approve or reject each document
+  (reason required), verify only when every document is approved. Audit-logged; the physio is notified.
+- Therapist practice: weekly hours (several blocks per day, per visit type) and prices.
+- Visit lifecycle: on the way → check-in with the patient's 4-digit code (derived, never stored; shown to the
+  patient only on the visit day; locked after 5 wrong tries) → live location (only during a visit) → complete with
+  session notes (pain, measurements, exercises, notes, home plan). Patients can read their notes.
+- Gender safety consent: a male physio must accept before visiting a woman patient (name and address hidden until
+  he does); declining cancels the visit and voids the payment; at check-in he must confirm the family member is
+  present, or report "nobody present" (visit moved free).
+- SOS from the physio (with location); ops live screen of visits in progress and open SOS, acknowledge
+  (response time logged) and resolve with a note.
+
 ## [0.2.1] — Payments: Cash + UPI-QR · File storage
 
 ### Changed

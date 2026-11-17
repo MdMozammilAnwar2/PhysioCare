@@ -8,6 +8,8 @@ import { authRouter } from './routes/auth.js';
 import { meRouter } from './routes/me.js';
 import { patientRouter } from './routes/patient.js';
 import { adminPaymentsRouter, bookingsRouter, notificationsRouter, paymentsRouter, therapistsRouter } from './routes/booking.js';
+import { therapistRouter } from './routes/therapist.js';
+import { adminRouter } from './routes/admin.js';
 import { zonesRouter } from './routes/public.js';
 import { filesRouter } from './routes/files.js';
 
@@ -28,6 +30,8 @@ export function createApp() {
   app.use('/api/v1/bookings', bookingsRouter);
   app.use('/api/v1/payments', paymentsRouter);
   app.use('/api/v1/admin/payments', adminPaymentsRouter);
+  app.use('/api/v1/admin', adminRouter);
+  app.use('/api/v1/therapist', therapistRouter);
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/zones', zonesRouter);
   app.use('/api/v1/files', filesRouter);
