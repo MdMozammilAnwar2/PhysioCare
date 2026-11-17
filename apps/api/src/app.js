@@ -12,6 +12,7 @@ import { therapistRouter } from './routes/therapist.js';
 import { adminRouter } from './routes/admin.js';
 import { zonesRouter } from './routes/public.js';
 import { filesRouter } from './routes/files.js';
+import { adminMoneyRouter, chatRouter, patientMoneyRouter, walletRouter } from './routes/money.js';
 
 export function createApp() {
   const app = express();
@@ -30,8 +31,12 @@ export function createApp() {
   app.use('/api/v1/bookings', bookingsRouter);
   app.use('/api/v1/payments', paymentsRouter);
   app.use('/api/v1/admin/payments', adminPaymentsRouter);
+  app.use('/api/v1/admin/money', adminMoneyRouter);
   app.use('/api/v1/admin', adminRouter);
+  app.use('/api/v1/therapist/wallet', walletRouter);
   app.use('/api/v1/therapist', therapistRouter);
+  app.use('/api/v1/patient', patientMoneyRouter);
+  app.use('/api/v1/chat', chatRouter);
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/zones', zonesRouter);
   app.use('/api/v1/files', filesRouter);

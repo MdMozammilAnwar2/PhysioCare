@@ -8,6 +8,7 @@ import { freeSlots } from './slots.js';
 import { genderRule } from './matching.js';
 import { schedulingRules } from './rules.js';
 import { audit } from './audit.js';
+import { accrueForPlan } from './money.js';
 
 const one = async (sql, replacements, transaction) => (await sequelize.query(sql, { replacements, transaction }))[0][0];
 const notify = (userId, type, title, body, data, transaction) => sequelize.query(
@@ -143,6 +144,7 @@ export async function reviewPayment({ admin, paymentId, approve, note, ip }) {
       invoiceNo = (await one(`SELECT 'INV-' || to_char(now() AT TIME ZONE 'Asia/Kolkata', 'YYYY') || '-' || lpad(nextval('invoice_seq')::text, 6, '0') AS no`, {}, transaction)).no;
       await sequelize.query(`UPDATE payments SET status = 'paid', invoice_no = :inv, verified_by = :a, verified_at = now(), review_note = :n, updated_at = now() WHERE id = :id`, { replacements: { inv: invoiceNo, a: admin.id, n: note ?? null, id: p.id }, transaction });
       await sequelize.query(`UPDATE attributions SET locked_at = COALESCE(locked_at, now()), updated_at = now() WHERE user_id = :u`, { replacements: { u: p.patient_id }, transaction });
+      await accrueForPlan(p.plan_id, transaction); // visits already completed now earn
       await notify(p.patient_id, 'payment_verified', 'Payment received', `Thank you. Invoice ${invoiceNo} is ready.`, { paymentId: p.id }, transaction);
     } else {
       await sequelize.query(`UPDATE payments SET status = 'rejected', verified_by = :a, verified_at = now(), review_note = :n, updated_at = now() WHERE id = :id`, { replacements: { a: admin.id, n: note ?? null, id: p.id }, transaction });

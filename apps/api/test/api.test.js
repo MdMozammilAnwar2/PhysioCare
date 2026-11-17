@@ -71,12 +71,13 @@ describe('OTP sign-in', () => {
   });
 
   it('never lets anyone sign up as super admin or another admin role', async () => {
+    const before = await UserRole.count({ where: { role: 'super_admin' } }); // other test files may seed one
     for (const role of ['super_admin', 'ops_admin', 'finance']) {
       const res = await signIn(nextPhone(), { role });
       expect(res.status).toBe(403);
       expect(res.body.error.code).toBe('role_not_allowed');
     }
-    expect(await UserRole.count({ where: { role: 'super_admin' } })).toBe(0);
+    expect(await UserRole.count({ where: { role: 'super_admin' } })).toBe(before);
   });
 
   it('lets a physio sign up with the therapist role', async () => {

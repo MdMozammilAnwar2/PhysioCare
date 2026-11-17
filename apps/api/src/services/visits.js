@@ -4,6 +4,7 @@ import { sequelize } from '../db/index.js';
 import { HttpError, hmac } from '../lib/util.js';
 import { istDate } from '../lib/time.js';
 import { audit } from './audit.js';
+import { accrueForPlan } from './money.js';
 
 const one = async (sql, replacements, transaction) => (await sequelize.query(sql, { replacements, transaction }))[0][0];
 const notify = (userId, type, title, body, data, transaction) => sequelize.query(
@@ -118,6 +119,7 @@ export async function completeVisit({ therapistId, visitId, painScore, measureme
     await sequelize.query(`UPDATE visits SET status = 'completed', completed_at = now(), updated_at = now() WHERE id = :id`, { replacements: { id: v.id }, transaction: t });
     await sequelize.query(`INSERT INTO session_notes (visit_id, therapist_id, pain_score, measurements, exercises, notes, home_plan) VALUES (:v, :t, :p, :m, :e, :n, :h)`,
       { replacements: { v: v.id, t: therapistId, p: painScore ?? null, m: JSON.stringify(measurements ?? {}), e: JSON.stringify(exercises ?? []), n: notes ?? null, h: homePlan ?? null }, transaction: t });
+    if (v.plan_id) await accrueForPlan(v.plan_id, t); // earning appears once the payment is confirmed
     await notify(v.patient_id, 'visit_completed', 'How was today’s visit?', 'Your session notes and home exercises are ready.', { visitId: v.id }, t);
     return { status: 'completed' };
   });

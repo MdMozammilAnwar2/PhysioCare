@@ -5,6 +5,23 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [Unreleased] — Phase 3 · Money and trust (0.4.0)
+
+### Added (API)
+- Money rules (super admin only, audit-logged): platform fee %, TDS %, hold days, minimum payout, report window.
+  Start at 0% fee and 0% TDS until the business decides; earnings keep the rates they were created with.
+- Earnings ledger: one entry per completed visit once its payment is confirmed (either order). Package price is
+  spread evenly; the last session takes the rounding remainder. Fee on gross, TDS on gross − fee, net = the rest.
+- 7-day hold → available; physio wallet (available, on hold, frozen, paid, TDS, entries, payouts).
+- Payouts: finance builds a batch (everyone with at least the minimum available), pays each physio by bank/UPI
+  outside the app and records the reference; frozen earnings can't be paid out. TDS report per physio and period.
+- Refunds of unused sessions: pro-rata estimate, request with refund-to details, ops/finance approve (future
+  visits cancelled, plan ends) or reject, finance records the transfer reference. One open request per plan.
+- Incidents within the report window freeze that visit's earning; upheld → reversed (+ optional refund), dismissed → unfrozen.
+- Ratings on completed visits (stars, tags, comment); physio average updates.
+- Chat per plan between patient and physio; phone numbers, UPI IDs, emails and off-app payment words are blocked
+  and the attempt is logged for leakage review.
+
 ## [0.3.0] — Phase 2 · Therapist and the visit
 
 ### Added (apps)
