@@ -417,8 +417,14 @@ export function Bookings() {
               {b.payment_method === 'upi' ? 'UPI' : 'Cash'} · {{ pending: 'payment due', submitted: 'checking payment', paid: 'paid', rejected: 'payment needs attention' }[b.payment_status ?? 'pending']} ›
             </Link>
           )}
+          <div className="flex gap-4 flex-wrap text-sm font-bold">
+            {b.plan_id && <Link to={`/chat/${b.plan_id}`} className="text-brand">Message physio</Link>}
+            {b.status === 'completed' && !b.rated && <Link to={`/visits/${b.id}/rate`} className="text-brand">Rate this visit</Link>}
+            {['completed', 'in_progress', 'booked', 'no_show'].includes(b.status) && <Link to={`/visits/${b.id}/report`} className="text-sub underline">Report a problem</Link>}
+          </div>
         </Card>
       ))}
+      <Link to="/plans" className="text-brand font-bold">My plans and refunds ›</Link>
     </Page>
   );
 }

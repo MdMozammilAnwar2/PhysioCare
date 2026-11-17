@@ -100,6 +100,7 @@ export const api = {
   complete: (id: string, b: object) => post(`/therapist/visits/${id}/complete`, b),
   sos: (b: { visitId?: string; lat?: number; lng?: number }) => post<{ message: string }>('/therapist/sos', b),
   cashReceived: (paymentId: string) => post(`/therapist/payments/${paymentId}/cash-received`),
+  wallet: () => call<Wallet>('/therapist/wallet'),
 };
 
 export const rupees = (p: number) => `₹${Math.round(p / 100).toLocaleString('en-IN')}`;
@@ -115,3 +116,9 @@ export function fmtDay(iso: string) {
 }
 export const visitsCache: { list: Visit[] } = { list: [] };
 export type Status = { status: string; version: string; maintenance: { enabled: boolean; message: string | null }; minAppVersion: Record<string, string> | null };
+
+export type Wallet = {
+  availablePaise: number; heldPaise: number; frozenPaise: number; paidPaise: number; tdsThisYearPaise: number;
+  entries: { id: string; gross_paise: number; fee_paise: number; tds_paise: number; net_paise: number; status: string; available_at: string; visit_at: string; patient_name: string | null; payout_reference: string | null }[];
+  payouts: { id: string; amount_paise: number; tds_paise: number; status: string; method: string | null; reference: string | null; paid_at: string | null; created_at: string }[];
+};

@@ -70,7 +70,8 @@ bookingsRouter.post('/hold', validate(z.object({
 }));
 
 bookingsRouter.get('/', asyncHandler(async (req, res) => {
-  const [rows] = await sequelize.query(`SELECT v.id, v.mode, v.status, lower(v.during) AS starts_at, upper(v.during) AS ends_at, u.name AS therapist_name,
+  const [rows] = await sequelize.query(`SELECT v.id, v.plan_id, v.mode, v.status, lower(v.during) AS starts_at, upper(v.during) AS ends_at, u.name AS therapist_name,
+      EXISTS (SELECT 1 FROM ratings r WHERE r.visit_id = v.id) AS rated,
       p.sessions_total, p.status AS plan_status, z.name AS zone_name, z.color AS zone_color,
       pay.id AS payment_id, pay.method AS payment_method, pay.status AS payment_status, pay.reference AS payment_reference, pay.amount_paise
     FROM visits v JOIN users u ON u.id = v.therapist_id LEFT JOIN plans p ON p.id = v.plan_id LEFT JOIN zones z ON z.id = v.zone_id LEFT JOIN payments pay ON pay.plan_id = v.plan_id

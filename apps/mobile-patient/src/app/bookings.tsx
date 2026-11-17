@@ -33,8 +33,14 @@ export default function Bookings() {
               {b.payment_method === 'upi' ? 'UPI' : 'Cash'} · {({ pending: 'payment due', submitted: 'checking payment', paid: 'paid', rejected: 'payment needs attention' } as Record<string, string>)[b.payment_status ?? 'pending']} ›
             </Text>
           )}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+            {b.plan_id && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/[planId]', params: { planId: b.plan_id! } })} style={{ color: C.brand, fontWeight: '700', paddingVertical: 8 }}>Message</Text>}
+            {b.status === 'completed' && !b.rated && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/rate/[id]', params: { id: b.id } })} style={{ color: C.brand, fontWeight: '700', paddingVertical: 8 }}>Rate visit</Text>}
+            {['completed', 'in_progress', 'booked', 'no_show'].includes(b.status) && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/report/[id]', params: { id: b.id } })} style={{ color: C.sub, fontWeight: '700', paddingVertical: 8, textDecorationLine: 'underline' }}>Report a problem</Text>}
+          </View>
         </Card>
       ))}
+      <Button title="My plans and refunds" variant="ghost" onPress={() => router.push('/plans')} />
       <Button title="Sign out" variant="ghost" onPress={async () => { await tokens.clear(); router.replace('/'); }} />
     </Screen>
   );

@@ -34,7 +34,7 @@ export type Package = { id: string; name: string; mode: string; sessions: number
 export type Hold = { visitId: string; planId: string; amountPaise: number; holdExpiresAt: string; needsPhysioConsent: boolean };
 export type Payment = { id: string; method: 'cash' | 'upi'; status: 'pending' | 'submitted' | 'paid' | 'rejected'; reference: string; amountPaise: number; upiId?: string; payeeName?: string; upiUri?: string; qrUrl?: string; invoiceNo?: string | null; reviewNote?: string | null };
 export type UploadedFile = { id: string; name: string; url: string };
-export type Booking = { id: string; mode: string; status: string; starts_at: string; therapist_name: string; sessions_total: number; plan_status: string; zone_name: string | null; zone_color: string | null; payment_id: string | null; payment_method: string | null; payment_status: string | null; payment_reference: string | null };
+export type Booking = { id: string; plan_id: string | null; rated: boolean; mode: string; status: string; starts_at: string; therapist_name: string; sessions_total: number; plan_status: string; zone_name: string | null; zone_color: string | null; payment_id: string | null; payment_method: string | null; payment_status: string | null; payment_reference: string | null };
 
 export const api = {
   status: () => raw<{ version: string; maintenance: { enabled: boolean; message: string | null } }>('/status'),
@@ -74,6 +74,22 @@ export const api = {
     return URL.createObjectURL(await res.blob());
   },
   bookings: () => raw<{ bookings: Booking[] }>('/bookings'),
+};
+
+// ---------- Phase 3: plans, refunds, problems, ratings, chat ----------
+export type Plan = { id: string; status: string; sessions_total: number; price_paise: number; valid_until: string | null; mode: string; therapist_name: string; payment_status: string | null; completed: number };
+export type RefundEstimate = { planId: string; paid: boolean; status: string; sessionsTotal: number; used: number; unused: number; amountPaise: number };
+export type PatientRefund = { id: string; plan_id: string; amount_paise: number; status: string; reference: string | null; note: string | null; created_at: string };
+export type ChatMessage = { id: number; body: string; created_at: string; mine: boolean };
+export const trust = {
+  plans: () => raw<{ plans: Plan[] }>('/patient/plans'),
+  refunds: () => raw<{ refunds: PatientRefund[] }>('/patient/refunds'),
+  refundEstimate: (planId: string) => raw<RefundEstimate>(`/patient/plans/${planId}/refund-estimate`),
+  requestRefund: (planId: string, refundTo: string) => post<{ refundId: string; amountPaise: number }>(`/patient/plans/${planId}/refund`, { refundTo }),
+  report: (b: { visitId: string; category: string; description: string; fileIds?: string[] }) => post('/patient/incidents', b),
+  rate: (visitId: string, b: { stars: number; tags?: string[]; comment?: string }) => post(`/patient/visits/${visitId}/rating`, b),
+  messages: (planId: string, after = 0) => raw<{ messages: ChatMessage[] }>(`/chat/${planId}/messages?after=${after}`),
+  send: (planId: string, body: string) => post<{ id: number }>(`/chat/${planId}/messages`, { body }),
 };
 
 export const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;

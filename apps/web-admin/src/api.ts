@@ -69,3 +69,22 @@ export const api = {
 export const rupees = (p: number) => `₹${Math.round(p / 100).toLocaleString('en-IN')}`;
 export const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '—');
 export const DOC_LABEL: Record<string, string> = { aadhaar_pan: 'Aadhaar & PAN', selfie: 'Live selfie', degree: 'BPT / MPT degree', council_registration: 'Council registration', police_verification: 'Police verification', bank_proof: 'Bank account proof' };
+
+// ---------- Phase 3: money and trust ----------
+export type Incident = { id: string; category: string; severity: 'low' | 'medium' | 'critical'; description: string; file_ids: string[]; status: string; decision_note: string | null; created_at: string; visit_at: string; patient_name: string | null; therapist_name: string | null };
+export type Refund = { id: string; amount_paise: number; reason: string; status: string; refund_to: string | null; reference: string | null; note: string | null; created_at: string; patient_name: string | null; patient_phone: string };
+export type Payout = { id: string; amount_paise: number; tds_paise: number; status: string; method: string | null; reference: string | null; paid_at: string | null; created_at: string; therapist_name: string | null; therapist_phone: string; sessions: number };
+export type MoneyRules = { platformFeePct: number; tdsPct: number; holdDays: number; minPayoutPaise: number; reportWindowDays: number };
+export const money = {
+  incidents: (status = 'open') => call<{ incidents: Incident[] }>(`/admin/money/incidents?status=${status}`),
+  decideIncident: (id: string, b: { uphold: boolean; note: string; refundPaise?: number }) => post(`/admin/money/incidents/${id}/decide`, b),
+  refunds: (status = 'requested') => call<{ refunds: Refund[] }>(`/admin/money/refunds?status=${status}`),
+  decideRefund: (id: string, approve: boolean, note?: string) => post(`/admin/money/refunds/${id}/decide`, { approve, note }),
+  refundPaid: (id: string, reference: string) => post(`/admin/money/refunds/${id}/paid`, { reference }),
+  buildBatch: () => post<{ batchId: string; payees: number }>('/admin/money/payout-batches'),
+  payouts: (status = 'pending') => call<{ payouts: Payout[] }>(`/admin/money/payouts?status=${status}`),
+  payoutPaid: (id: string, method: 'bank' | 'upi', reference: string) => post(`/admin/money/payouts/${id}/paid`, { method, reference }),
+  tds: (from: string, to: string) => call<{ from: string; to: string; rows: { id: string; name: string | null; phone: string; gross_paise: number; fee_paise: number; tds_paise: number; net_paise: number; sessions: number }[] }>(`/admin/money/tds?from=${from}&to=${to}`),
+  rules: () => call<{ rules: MoneyRules }>('/admin/money/money-rules'),
+  saveRules: (r: MoneyRules) => call<{ rules: MoneyRules }>('/admin/money/money-rules', { method: 'PUT', body: JSON.stringify(r) }),
+};

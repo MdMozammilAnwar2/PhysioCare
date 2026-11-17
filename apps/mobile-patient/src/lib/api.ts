@@ -79,7 +79,17 @@ export const api = {
   // Image source for protected images (QR code): <Image source={api.imageSource(path)} />.
   imageSource: (path: string) => ({ uri: `${BASE.replace(/\/api\/v1$/, '')}${path}`, headers: access ? { Authorization: `Bearer ${access}` } : undefined }),
 
-  bookings: () => call<{ bookings: { id: string; status: string; starts_at: string; therapist_name: string; mode: string; sessions_total: number; zone_name: string | null; payment_id: string | null; payment_method: string | null; payment_status: string | null }[] }>('/bookings'),
+  // Phase 3: plans, refunds, problems, ratings, chat.
+  plans: () => call<{ plans: { id: string; status: string; sessions_total: number; price_paise: number; valid_until: string | null; mode: string; therapist_name: string; payment_status: string | null; completed: number }[] }>('/patient/plans'),
+  refunds: () => call<{ refunds: { id: string; plan_id: string; amount_paise: number; status: string; note: string | null }[] }>('/patient/refunds'),
+  refundEstimate: (planId: string) => call<{ planId: string; unused: number; amountPaise: number }>(`/patient/plans/${planId}/refund-estimate`),
+  requestRefund: (planId: string, refundTo: string) => post(`/patient/plans/${planId}/refund`, { refundTo }),
+  report: (b: { visitId: string; category: string; description: string; fileIds?: string[] }) => post('/patient/incidents', b),
+  rate: (visitId: string, b: { stars: number; tags?: string[]; comment?: string }) => post(`/patient/visits/${visitId}/rating`, b),
+  messages: (planId: string, after = 0) => call<{ messages: { id: number; body: string; created_at: string; mine: boolean }[] }>(`/chat/${planId}/messages?after=${after}`),
+  send: (planId: string, body: string) => post<{ id: number }>(`/chat/${planId}/messages`, { body }),
+
+  bookings: () => call<{ bookings: { id: string; plan_id: string | null; rated: boolean; status: string; starts_at: string; therapist_name: string; mode: string; sessions_total: number; zone_name: string | null; payment_id: string | null; payment_method: string | null; payment_status: string | null }[] }>('/bookings'),
 };
 
 export const rupees = (p: number) => `₹${Math.round(p / 100).toLocaleString('en-IN')}`;

@@ -5,7 +5,16 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
-## [Unreleased] — Phase 3 · Money and trust (0.4.0)
+## [0.4.0] — Phase 3 · Money and trust
+
+### Added (apps)
+- **Admin console**: Incidents (uphold with optional refund, or dismiss and unfreeze), Refunds (approve, reject,
+  mark paid with the transfer reference), Payouts (build the weekly batch, mark each paid by bank/UPI with a reference),
+  TDS report per physio and period with CSV download, Fees, TDS & holds (editable by super admin only).
+- **Therapist app**: Earnings screen with available, on hold, frozen, paid and TDS totals, payouts and per-visit entries.
+- **Website and patient app**: rate a completed visit (stars, tags, comment); report a problem with photos;
+  My plans with sessions used and refund of unused sessions; messages with the physio per plan (refreshes every 5 s).
+- `GET /bookings` now returns `plan_id` and `rated`.
 
 ### Added (API)
 - Money rules (super admin only, audit-logged): platform fee %, TDS %, hold days, minimum payout, report window.

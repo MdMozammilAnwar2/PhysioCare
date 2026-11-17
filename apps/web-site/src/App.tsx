@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Shell } from './ui';
 import { AboutYou, Bookings, ChoosePayment, Home, PaymentPage, Physio, RequireAuth, SignIn, Time, Where } from './pages';
+import { Chat, Plans, RateVisit, ReportProblem } from './trust-pages';
 
 export default function App() {
   return (
@@ -16,6 +17,10 @@ export default function App() {
           <Route path="/book/pay" element={<RequireAuth><ChoosePayment /></RequireAuth>} />
           <Route path="/payments/:id" element={<RequireAuth><PaymentPage /></RequireAuth>} />
           <Route path="/bookings" element={<RequireAuth><Bookings /></RequireAuth>} />
+          <Route path="/plans" element={<RequireAuth><Plans /></RequireAuth>} />
+          <Route path="/visits/:id/rate" element={<RequireAuth><RateVisit /></RequireAuth>} />
+          <Route path="/visits/:id/report" element={<RequireAuth><ReportProblem /></RequireAuth>} />
+          <Route path="/chat/:planId" element={<RequireAuth><Chat /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Shell>

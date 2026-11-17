@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-do
 import { ADMIN_ROLES } from '@physioconnect/shared';
 import { api, ApiError, hasSession, type Status, type User } from './api';
 import { Header, Live, Payments, TherapistReview, VerificationQueue } from './pages';
+import { Incidents, MoneyRulesPage, Payouts, Refunds, Tds } from './money-pages';
 
 // Checks the public status API on start and every 60 s, like every PhysioConnect app.
 function useStatus() {
@@ -57,6 +58,11 @@ const NAV: [string, string, string[]][] = [
   ['/live', 'Live visits & SOS', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/verification', 'Verification', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/payments', 'Payments to confirm', ['ops_admin', 'finance', 'super_admin']],
+  ['/incidents', 'Incidents', ['ops_admin', 'super_admin']],
+  ['/refunds', 'Refunds', ['ops_admin', 'finance', 'super_admin']],
+  ['/payouts', 'Payouts', ['finance', 'super_admin']],
+  ['/tds', 'TDS report', ['finance', 'super_admin']],
+  ['/money-rules', 'Fees, TDS & holds', ['finance', 'super_admin']],
 ];
 
 function Console({ user, status, onSignOut }: { user: User; status: Status | null; onSignOut: () => void }) {
@@ -79,6 +85,11 @@ function Console({ user, status, onSignOut }: { user: User; status: Status | nul
           <Route path="/verification" element={<VerificationQueue />} />
           <Route path="/verification/:id" element={<TherapistReview />} />
           <Route path="/payments" element={<Payments />} />
+          <Route path="/incidents" element={<Incidents />} />
+          <Route path="/refunds" element={<Refunds canPay={user.roles.some(r => r === 'finance' || r === 'super_admin')} />} />
+          <Route path="/payouts" element={<Payouts />} />
+          <Route path="/tds" element={<Tds />} />
+          <Route path="/money-rules" element={<MoneyRulesPage canEdit={user.roles.includes('super_admin')} />} />
           <Route path="*" element={nav[0] ? <Navigate to={nav[0][0]} replace /> : <Header title="No pages for your role yet" />} />
         </Routes>
       </main>
