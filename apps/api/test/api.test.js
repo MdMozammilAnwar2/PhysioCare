@@ -20,7 +20,7 @@ afterAll(async () => { await sequelize.close(); });
 describe('GET /api/v1/status', () => {
   it('is public and reports version, services and maintenance', async () => {
     const res = await request(app).get('/api/v1/status').expect(200);
-    expect(res.body).toMatchObject({ status: 'operational', version: '0.2.1', services: { api: 'up', db: 'up' }, maintenance: { enabled: false } });
+    expect(res.body).toMatchObject({ status: 'operational', version: '0.3.0', services: { api: 'up', db: 'up' }, maintenance: { enabled: false } });
     expect(res.body.minAppVersion.patient).toBe('0.1.0');
     expect(res.headers['access-control-allow-origin']).toBe('*');
   });

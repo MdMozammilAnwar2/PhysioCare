@@ -5,7 +5,19 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
-## [Unreleased] — Phase 2 · Therapist and the visit (0.3.0)
+## [0.3.0] — Phase 2 · Therapist and the visit
+
+### Added (apps)
+- **Admin console**: role-based navigation; verification queue and physio review (profile, signed agreement,
+  document viewer for images/PDF/video, approve/reject each document, verify or send back with a note);
+  payments to confirm (UPI UTR + screenshot, cash; approve/reject); live visits with SOS banner, acknowledge,
+  resolve and map links, refreshing every 15 s.
+- **Therapist app** (`apps/mobile-therapist`, Expo SDK 58): OTP sign-in as a physio; onboarding (profile, what
+  you treat, languages, start area and service radius, female-patients-only); six documents (selfie with the
+  front camera); partner agreement v2.1 signature and submit; verification status with rejected-document notes;
+  hours and prices; schedule with consent requests (accept/decline) and visits; visit screen with directions,
+  "I'm on the way", check-in code (+ family-present confirmation), "nobody present", session notes, cash
+  received, and a hold-to-send SOS. Location is shared every 60 s only while on the way or in session.
 
 ### Added (API)
 - Therapist onboarding: profile and service area, six required documents (stored in the file store),

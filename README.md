@@ -1,7 +1,7 @@
 # PhysioConnect by Healthtropic
 
 Verified physiotherapy at home, matched by zone, safety rules and recovery needs.
-Version **0.2.1 · Phase 1 + Cash/UPI payments and file storage**. See [CHANGELOG.md](CHANGELOG.md).
+Version **0.3.0 · Phase 2 (Therapist and the visit)**. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Repository
 
@@ -11,10 +11,11 @@ Version **0.2.1 · Phase 1 + Cash/UPI payments and file storage**. See [CHANGELO
 | `apps/web-admin` | Admin console (React + Vite + Tailwind) — super admin, ops, finance, city coordinator |
 | `apps/web-site` | Public website and web booking (React + Vite + Tailwind) |
 | `apps/mobile-patient` | Patient app (React Native, Expo SDK 58, Expo Router) |
+| `apps/mobile-therapist` | Therapist app (React Native, Expo SDK 58, Expo Router) |
 | `packages/tokens` | Style A (Clean Blue) design tokens + Tailwind preset, shared by every app |
 | `packages/shared` | Roles, zone colours, attribution sources, visit statuses, app version |
 
-Therapist, partner and super admin mobile apps come in later phases.
+Partner and super admin mobile apps come in later phases.
 
 ## Run it locally
 
@@ -32,6 +33,7 @@ npm run admin:dev                     # http://localhost:5174
 npm run site:dev                      # http://localhost:5173
 npm test                              # API tests against a real Postgres
 npm run patient:dev                   # Expo dev server; set EXPO_PUBLIC_API_URL in apps/mobile-patient/.env
+npm run therapist:dev                 # same for apps/mobile-therapist
 ```
 
 In development, `SMS_PROVIDER=console` prints OTP codes in the API log instead of sending SMS.
@@ -67,6 +69,14 @@ There is no sign-up, API or screen that creates a super admin. Set `SUPER_ADMIN_
 | POST / GET | `/api/v1/files` | signed in | Upload (multipart `file`, `purpose`, `visibility`); list my files |
 | GET | `/api/v1/files/:id`, `/:id/content[?download=1]` | owner, staff, or public | Metadata; view or download |
 | DELETE | `/api/v1/files/:id` | owner, staff | Hide (files are never deleted) |
+| GET / PUT | `/api/v1/therapist/profile`, `/availability`, PUT `/prices` | physio | Onboarding profile, weekly hours, prices |
+| POST | `/api/v1/therapist/documents`, `/agreement`, `/submit` | physio | Documents, agreement signature, submit for review |
+| GET | `/api/v1/therapist/visits` | physio | Schedule (patient details hidden until consent) |
+| POST | `/api/v1/therapist/visits/:id/consent`, `/on-the-way`, `/check-in`, `/nobody-present`, `/location`, `/complete` | physio | Visit lifecycle |
+| POST | `/api/v1/therapist/sos` | physio | Raise SOS with location |
+| GET | `/api/v1/bookings/:visitId/checkin-code`, `/notes` | patient | Check-in code (visit day only); session notes |
+| GET / POST | `/api/v1/admin/verification`, `/therapists/:id`, `/documents/:id/review`, `/therapists/:id/verify` | ops, super admin, coordinator | Verification |
+| GET / POST | `/api/v1/admin/live-visits`, `/sos/:id/acknowledge`, `/sos/:id/resolve` | ops, super admin, coordinator | Live visits and SOS |
 | GET | `/api/v1/notifications` | signed in | In-app notifications |
 
 ## Versioning

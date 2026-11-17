@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "PhysioConnect Partner",
+    "slug": "physioconnect-therapist",
+    "scheme": "physioconnect-partner",
+    "version": "0.3.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "PhysioConnect uses your location only during a visit, for your safety and to show the patient you are on the way."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "in.healthtropic.physioconnect.partner"
+    },
+    "android": {
+      "package": "in.healthtropic.physioconnect.partner",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A6CFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
