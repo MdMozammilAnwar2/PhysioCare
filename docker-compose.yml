@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: physio
+      POSTGRES_PASSWORD: physio
+      POSTGRES_DB: physioconnect
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./apps/api/scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+volumes:
+  pgdata:

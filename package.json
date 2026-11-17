@@ -1,0 +1,24 @@
+{
+  "name": "physioconnect",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PhysioConnect by Healthtropic — monorepo for API, web apps and mobile apps",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down",
+    "api:dev": "npm run dev -w @physioconnect/api",
+    "api:migrate": "npm run migrate -w @physioconnect/api",
+    "api:seed": "npm run seed -w @physioconnect/api",
+    "admin:dev": "npm run dev -w @physioconnect/web-admin",
+    "site:dev": "npm run dev -w @physioconnect/web-site",
+    "test": "npm test -w @physioconnect/api",
+    "build": "npm run build -w @physioconnect/web-admin && npm run build -w @physioconnect/web-site"
+  }
+}
