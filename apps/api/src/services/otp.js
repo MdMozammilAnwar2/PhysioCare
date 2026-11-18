@@ -1,8 +1,9 @@
 import { Op } from 'sequelize';
 import { config } from '../config/index.js';
 import { OtpRequest } from '../models/index.js';
-import { HttpError, hmac, randomDigits, safeEqualHex } from '../lib/util.js';
+import { HttpError, hmac, randomDigits, safeEqualHex, maskPhone } from '../lib/util.js';
 import { smsProvider } from './sms.js';
+import { log } from '../middleware/security.js';
 
 const hashCode = (phone, code) => hmac(config.otpSecret, `${phone}:${code}`);
 
@@ -15,7 +16,11 @@ export async function sendOtp(phone, { ip, purpose = 'login' } = {}) {
   }
   const code = randomDigits(config.otp.length);
   await OtpRequest.create({ phone, codeHash: hashCode(phone, code), purpose, ip, expiresAt: new Date(Date.now() + config.otp.ttlMinutes * 60 * 1000) });
-  await smsProvider().sendOtp(phone, code);
+  try { await smsProvider().sendOtp(phone, code); }
+  catch (e) {
+    log('error', 'otp sms failed', { phone: maskPhone(phone), error: e.message });
+    throw new HttpError(502, 'sms_failed', 'We couldn’t send the code right now. Please try again in a minute.');
+  }
   // Development convenience only: the sign-in screen shows the code (never in production or with real SMS).
   const showCode = config.otp.devShowCode && config.env === 'development' && config.sms.provider === 'console';
   return { expiresInSeconds: config.otp.ttlMinutes * 60, resendAfterSeconds: config.otp.resendAfterSeconds, ...(showCode ? { devCode: code } : {}) };

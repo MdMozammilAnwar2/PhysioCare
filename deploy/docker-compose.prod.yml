@@ -1,0 +1,80 @@
+# PhysioCare production: database, API, web server (HTTPS) and nightly backups on one server.
+#   cp deploy/.env.example deploy/.env       # domains and database password
+#   cp apps/api/.env.example deploy/api.env  # every API setting (see docs/LAUNCH.md)
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build
+name: physiocare
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: physio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: physiocare
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U physio -d physiocare"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published on the internet: only the API (and backups) can reach it.
+
+  api:
+    build: { context: .., dockerfile: deploy/Dockerfile, target: api }
+    image: physiocare/api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: api.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://physio:${POSTGRES_PASSWORD}@postgres:5432/physiocare
+      STORAGE_DIR: /data/storage
+      WEB_SITE_DIST: /app/web-site-dist
+      TRUST_PROXY: "1"
+      LOG_FORMAT: json
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      postgres: { condition: service_healthy }
+    logging: { driver: json-file, options: { max-size: "20m", max-file: "10" } }
+
+  web:
+    build: { context: .., dockerfile: deploy/Dockerfile, target: web }
+    image: physiocare/web:${APP_VERSION:-latest}
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in deploy/.env}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Set ADMIN_DOMAIN in deploy/.env}
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN in deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in deploy/.env}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+
+  # Nightly at BACKUP_HOUR (IST): database dump + uploaded files, kept BACKUP_KEEP_DAYS days.
+  # Copy /backups off the server too (see docs/LAUNCH.md › Backups).
+  backup:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+      TZ: Asia/Kolkata
+    volumes:
+      - backups:/backups
+      - storage:/data/storage:ro
+      - ./backup.sh:/backup.sh:ro
+    entrypoint: ["sh", "/backup.sh", "loop"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  storage:
+  backups:
+  caddy_data:
+  caddy_config:

@@ -91,6 +91,24 @@ export const config = {
     red: hours('ZONE_HOURS_RED', 'closed'),
   },
 
+  // ---------- security, logs, hosting ----------
+  security: {
+    trustProxy: num('TRUST_PROXY', 1),                 // proxies in front of the API (Caddy = 1)
+    rateLimitPerMinute: num('RATE_LIMIT_PER_MINUTE', 300), // per IP, all API calls
+    authLimitPer15Min: num('AUTH_RATE_LIMIT_PER_15_MIN', 30), // per IP, sign-in calls
+    uploadLimitPerHour: num('UPLOAD_RATE_LIMIT_PER_HOUR', 120), // per signed-in person
+    rateLimits: bool('RATE_LIMITS', env.NODE_ENV === 'production'), // on in production; off on your computer
+  },
+  logs: {
+    format: str('LOG_FORMAT', env.NODE_ENV === 'production' ? 'json' : 'pretty'), // json | pretty
+    requests: bool('LOG_REQUESTS', !isTest),
+    slowMs: num('LOG_SLOW_MS', 1500),
+  },
+  // Built website (apps/web-site/dist). The API serves its index.html with each page's title, description and
+  // preview image filled in, so search engines and WhatsApp/Facebook link previews see them.
+  webSiteDist: str('WEB_SITE_DIST', localPath('../../../web-site/dist')),
+  backups: { keepDays: num('BACKUP_KEEP_DAYS', 30) },
+
   // ---------- messages: SMS, WhatsApp, push ----------
   messaging: {
     // SMS for notifications (not OTP): console (development log) | msg91 (needs DLT templates) | none

@@ -3,7 +3,7 @@
     "name": "PhysioCare Partner",
     "slug": "physioconnect-therapist",
     "scheme": "physioconnect-partner",
-    "version": "0.9.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -34,6 +34,13 @@
           "color": "#5146D9",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PhysioCare uses your photos only to upload your documents.",
+          "cameraPermission": "PhysioCare uses the camera only when you take a photo to upload (for example your selfie for verification)."
+        }
       ]
     ],
     "experiments": {
@@ -41,7 +48,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "in.healthtropic.physioconnect.partner"
+      "bundleIdentifier": "in.healthtropic.physioconnect.partner",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "in.healthtropic.physioconnect.partner",
@@ -51,7 +61,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -5,6 +5,8 @@ import { captureAttribution, draft, pendingAttribution } from './booking-state';
 import { Button, Card, Chips, ErrorText, Field, Page, ZonePill } from './ui';
 import { AddressSearch } from './address-search';
 
+// Only same-site paths after sign-in (blocks //evil.com, /\evil.com and https://… open redirects).
+const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') && !/[\\\s]/.test(n) ? n : '/book');
 const msg = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
 const IST = 'Asia/Kolkata';
 const fmtDay = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { timeZone: IST, weekday: 'short', day: 'numeric', month: 'short' });
@@ -21,7 +23,7 @@ export function RequireAuth({ children }: { children: React.ReactElement }) {
 export function SignIn() {
   const nav = useNavigate();
   const loc = useLocation();
-  const next = new URLSearchParams(loc.search).get('next') || '/book';
+  const next = safeNext(new URLSearchParams(loc.search).get('next'));
   const asPartner = new URLSearchParams(loc.search).get('as') === 'partner';
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -67,7 +69,7 @@ export function SignIn() {
 // ---------- About you + consent ----------
 export function AboutYou() {
   const nav = useNavigate();
-  const next = new URLSearchParams(useLocation().search).get('next') || '/book';
+  const next = safeNext(new URLSearchParams(useLocation().search).get('next'));
   const [f, setF] = useState({ name: '', birthYear: '', gender: 'male', condition: 'after_surgery', procedure: '', surgeryDate: '', preferred: 'any' });
   const [agree, setAgree] = useState({ location: false, terms: false, surgeon: false });
   const [error, setError] = useState<string | null>(null);

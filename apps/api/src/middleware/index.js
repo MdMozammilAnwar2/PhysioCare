@@ -3,6 +3,8 @@ import { User, UserRole } from '../models/index.js';
 import { HttpError } from '../lib/util.js';
 import { verifyAccessToken } from '../services/tokens.js';
 import { expireBlocks } from '../services/blocks.js';
+import { log } from './security.js';
+import { config } from '../config/index.js';
 
 const ROLE_ORDER = ['super_admin', 'ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'content_editor', 'therapist', 'partner_owner', 'partner_staff', 'partner_wallet', 'patient'];
 export const primaryRole = roles => ROLE_ORDER.find(r => roles.includes(r)) ?? roles[0];
@@ -35,9 +37,12 @@ export const requireRole = (...allowed) => (req, _res, next) => {
 export function notFound(_req, _res, next) { next(new HttpError(404, 'not_found', 'Not found.')); }
 
 // eslint-disable-next-line no-unused-vars
-export function errorHandler(err, _req, res, _next) {
+export function errorHandler(err, req, res, _next) {
   if (err instanceof ZodError) return res.status(400).json({ error: { code: 'invalid_input', message: 'Check the highlighted fields.', details: err.flatten().fieldErrors } });
   if (err instanceof HttpError) return res.status(err.status).json({ error: { code: err.code, message: err.message, details: err.details } });
-  console.error(err);
-  res.status(500).json({ error: { code: 'server_error', message: 'Something went wrong. Please try again.' } });
+  if (err?.type === 'entity.too.large') return res.status(413).json({ error: { code: 'too_large', message: 'That request is too large.' } });
+  if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: { code: 'bad_json', message: 'The request could not be read.' } });
+  log('error', 'unhandled', { id: req.id, path: req.originalUrl?.split('?')[0], error: err?.message, stack: config.isProd ? undefined : err?.stack });
+  // The request id lets support find the exact error in the logs without exposing details.
+  res.status(500).json({ error: { code: 'server_error', message: 'Something went wrong. Please try again.', requestId: req.id } });
 }

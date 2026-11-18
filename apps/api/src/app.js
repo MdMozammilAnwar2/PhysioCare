@@ -19,18 +19,25 @@ import { adminGrievanceRouter, grievanceRouter, publicRouter } from './routes/gr
 import { adminCmsRouter, publicCmsRouter, seoRouter } from './routes/cms.js';
 import { adminCalendarRouter, calendarRouter, publicCalendarRouter, videoRouter, webhookRouter } from './routes/calendar.js';
 import { adminMessagingRouter, callsRouter, callWebhookRouter, devicesRouter, inboxRouter, mapsRouter } from './routes/messaging.js';
+import { apiLimiter, authLimiter, requestLog, uploadLimiter } from './middleware/security.js';
+import { siteHtmlRouter } from './routes/site-html.js';
 
 export function createApp() {
   const app = express();
-  app.set('trust proxy', 1);
+  app.set('trust proxy', config.security.trustProxy);
   app.disable('x-powered-by');
   // Files are served to other origins (website, apps), so allow cross-origin reads of resources.
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(requestLog);
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, hsts: config.isProd ? { maxAge: 31536000, includeSubDomains: true } : false }));
   app.use(cors({ origin: config.corsOrigins }));
   app.use('/api/v1/webhooks', webhookRouter, callWebhookRouter); // before the JSON parser: signatures need the raw body
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api/v1', apiLimiter);
+  app.use('/api/v1/auth', authLimiter);
+  app.use('/api/v1/files', (req, res, next) => (req.method === 'POST' ? uploadLimiter(req, res, next) : next()));
 
   app.use('/api/v1/status', cors({ origin: '*' }), statusRouter); // public for any app or monitor
+  app.get('/healthz', (_req, res) => res.json({ ok: true })); // liveness for Docker (no database call)
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/me', meRouter);
   app.use('/api/v1/patient', patientRouter);
@@ -56,6 +63,7 @@ export function createApp() {
   app.use('/api/v1/growth', growthRouter);
   app.use('/api/v1/public', cors({ origin: '*' }), publicRouter, publicCmsRouter);
   app.use('/', seoRouter); // /sitemap.xml and /robots.txt
+  app.use('/', siteHtmlRouter); // /_site/<path>: website pages with titles and link previews filled in
   app.use('/api/v1/grievances', grievanceRouter);
   app.use('/api/v1/calendar', publicCalendarRouter, calendarRouter);
   app.use('/api/v1/video', videoRouter);

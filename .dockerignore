@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/.expo
+**/storage
+**/storage-test
+apps/mobile-*/*
+!apps/mobile-*/package.json
+.git
+deploy/.env
+deploy/api.env

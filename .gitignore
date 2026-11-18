@@ -12,3 +12,7 @@ coverage/
 apps/*/.claude/
 apps/api/storage/
 apps/api/storage-test/
+
+# production secrets on the server
+deploy/.env
+deploy/api.env

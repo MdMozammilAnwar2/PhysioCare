@@ -20,7 +20,7 @@ export function useSeo({ title, description, image, noindex }: { title?: string;
     set('name', 'description', description ?? undefined);
     set('property', 'og:title', document.title);
     set('property', 'og:description', description ?? undefined);
-    set('property', 'og:image', image ? new URL(image, location.origin).toString() : `${location.origin}/icon-512.png`);
+    set('property', 'og:image', image ? new URL(image, location.origin).toString() : `${location.origin}/og-image.png`);
     set('name', 'robots', noindex ? 'noindex' : undefined);
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }

@@ -5,6 +5,46 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [1.0.0] — Phase 9 · Patna launch
+
+### Hosting (`deploy/`)
+- **Production stack on one server**: PostgreSQL (not exposed), the API, Caddy with automatic HTTPS for the website,
+  console and API domains, and a nightly backup service. `docker compose -f deploy/docker-compose.prod.yml up -d --build`.
+- **Images**: the API runs as a non-root user with a health check and applies migrations on every start; the web
+  image serves the built website and console with long-lived caching for hashed files and compression.
+- **Security headers**: HSTS, strict Content-Security-Policy, `nosniff`, referrer and permissions policies;
+  the console is `noindex` and can't be framed.
+- **Backups**: database dump + uploaded files every night (IST), each dump checked after writing, kept
+  `BACKUP_KEEP_DAYS`; one-command backup and restore (`backup.sh now | restore <file>`).
+
+### Added (API)
+- **Launch check**: production refuses to start with weak secrets, development SMS, localhost addresses, the
+  development database password or a placeholder super admin, and logs every business setting still missing.
+  `npm run api:check` shows the same list for any `.env`.
+- **Link previews and SEO**: website pages are served with their own title, description, preview image, canonical
+  link and structured data (MedicalBusiness, Physician with ratings), 404 for unknown pages and `noindex` for app
+  screens, so WhatsApp, Facebook and Google show the right card. New 1200×630 share image.
+- **Rate limits** (production): 300 requests/minute per IP, 30 sign-ins per 15 minutes per IP, 120 uploads per hour
+  per person.
+- **Logs**: one JSON line per request with a request id (also returned to the user on errors); bodies, tokens, codes
+  and full phone numbers are never logged; slow requests flagged. `/healthz` for Docker and uptime monitors.
+
+### Fixed
+- Sign-in reported success when MSG91 answered with an error inside a 200 response; it now shows "We couldn't send
+  the code" and logs the reason.
+- Website: after sign-in, only same-site addresses are followed (no open redirects).
+- React Router updated to 6.30.6 (open-redirect advisories).
+
+### Apps
+- EAS build profiles (`preview` APK, `production` store builds, `submit`) for PhysioCare, PhysioCare Partner and
+  PhysioCare Admin; camera and photo permission texts for the stores; microphone permission blocked.
+
+### Docs
+- `docs/LAUNCH.md`: server and DNS, secrets, start, app stores, business checklist (legal review, Grievance Officer,
+  UPI, fees/TDS, DLT templates, WhatsApp, Maps, Exotel, Google Calendar, zones, physios, QR printing), backups
+  (incl. off-site copy and a restore drill), monitoring, updates and a 30-minute go-live test.
+- `docs/SECURITY.md`: what protects patients, physios and the business, and the known items accepted for now.
+
 ## [0.9.0] — Phase 8 · Reaching people: push, SMS, WhatsApp, maps, masked calls, admin app
 
 Each service switches on with its key in `apps/api/.env`; until then it runs in development mode

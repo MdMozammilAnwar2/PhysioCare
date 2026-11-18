@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
-import { BRAND, iconSvg, markSvg } from '../packages/tokens/brand.js';
+import { BRAND, iconSvg, MARK_VARIANTS, markShapes, markSvg } from '../packages/tokens/brand.js';
 
 const C = BRAND.colors;
 const out = (path, data) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, data); console.log('  ', path); };
@@ -47,4 +47,18 @@ for (const [app, { bg, variant, splash }] of Object.entries(apps)) {
   out(`${a}/notification-icon.png`, png(iconSvg({ size: 96, variant: 'monoWhite', shape: 'none', scale: 0.84, thick: true }), 96));
   out(`${a}/favicon.png`, png(iconSvg({ size: 48, bg, variant, shape: 'rounded', scale: 0.66, thick: true }), 48));
 }
+// Social share card (1200×630) for WhatsApp, Facebook and search results, with the wordmark in Plus Jakarta Sans.
+const fontDir = 'node_modules/@expo-google-fonts/plus-jakarta-sans';
+const fontFiles = [`${fontDir}/800ExtraBold/PlusJakartaSans_800ExtraBold.ttf`, `${fontDir}/600SemiBold/PlusJakartaSans_600SemiBold.ttf`];
+const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5146D9"/><stop offset="1" stop-color="#6A5FE6"/></linearGradient></defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <g transform="translate(96 150) scale(1.5)">${markShapes(MARK_VARIANTS.reversed)}</g>
+  <text x="280" y="262" font-family="Plus Jakarta Sans" font-weight="800" font-size="112" letter-spacing="-2.8"><tspan fill="#FFFFFF">Physio</tspan><tspan fill="#C9C3F7">Care</tspan></text>
+  <text x="286" y="312" font-family="Plus Jakarta Sans" font-weight="600" font-size="26" letter-spacing="6.5" fill="#FFFFFF" fill-opacity="0.8">BY HEALTHTROPIC</text>
+  <text x="96" y="470" font-family="Plus Jakarta Sans" font-weight="800" font-size="54" fill="#FFFFFF">Physiotherapy at home in Patna</text>
+  <text x="96" y="530" font-family="Plus Jakarta Sans" font-weight="600" font-size="30" fill="#FFFFFF" fill-opacity="0.85">Verified physiotherapists · Female physios available · Cash or UPI</text>
+</svg>`;
+const ogPng = new Resvg(og, { fitTo: { mode: 'width', value: 1200 }, font: { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Plus Jakarta Sans' } }).render().asPng();
+out('apps/web-site/public/og-image.png', ogPng);
 console.log('Brand assets generated.');

@@ -1,0 +1,77 @@
+# PhysioCare web server. Caddy gets and renews HTTPS certificates automatically for these domains.
+# Domains come from deploy/.env: SITE_DOMAIN (e.g. physiocare.in), ADMIN_DOMAIN (admin.physiocare.in), API_DOMAIN (api.physiocare.in).
+{
+	email {$ACME_EMAIL}
+}
+
+(security) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=()"
+		-Server
+	}
+}
+
+(static_cache) {
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	@icons path /favicon* /icon-* /apple-touch-icon.png /og-image.png /mark*.svg /manifest.webmanifest
+	header @icons Cache-Control "public, max-age=86400"
+}
+
+# ---------- public website ----------
+{$SITE_DOMAIN}, www.{$SITE_DOMAIN} {
+	import security
+	import static_cache
+	encode zstd gzip
+	@www host www.{$SITE_DOMAIN}
+	redir @www https://{$SITE_DOMAIN}{uri} permanent
+
+	header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; connect-src 'self'; frame-src https://www.youtube-nocookie.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+	# API calls, QR links and search-engine files go to the API.
+	@api path /api/* /r/* /sitemap.xml /robots.txt
+	handle @api {
+		reverse_proxy api:4000
+	}
+	# Real files (scripts, styles, images, icons) are served directly.
+	@file file {
+		root /srv/site
+	}
+	handle @file {
+		root * /srv/site
+		file_server
+	}
+	# Every page: the API fills in its title, description and preview image (WhatsApp/Facebook/Google).
+	handle {
+		rewrite * /_site{path}
+		reverse_proxy api:4000
+	}
+}
+
+# ---------- staff console ----------
+{$ADMIN_DOMAIN} {
+	import security
+	import static_cache
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow"
+	header X-Frame-Options "DENY"
+	header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'"
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+	handle {
+		root * /srv/admin
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# ---------- API (mobile apps, QR codes, webhooks, calendar feeds) ----------
+{$API_DOMAIN} {
+	import security
+	encode zstd gzip
+	reverse_proxy api:4000
+}

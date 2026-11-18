@@ -19,7 +19,9 @@ const providers = {
       url.searchParams.set('mobile', phone.replace('+', ''));
       url.searchParams.set('otp', code);
       const res = await fetch(url, { method: 'POST', headers: { authkey: config.sms.msg91AuthKey, 'content-type': 'application/json' } });
-      if (!res.ok) throw new Error(`MSG91 send failed with status ${res.status}`);
+      // MSG91 can answer HTTP 200 with { type: 'error' } (wrong key, template or DLT problem), so check the body too.
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body.type === 'error') throw new Error(`MSG91 send failed: ${body.message ?? res.status}`);
     },
   },
 };

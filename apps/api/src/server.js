@@ -3,6 +3,15 @@ import { createApp } from './app.js';
 import { sequelize } from './db/index.js';
 import { syncAll } from './services/calendar.js';
 import { dispatchOnce } from './services/notify.js';
+import { preflight } from './services/preflight.js';
+import { log } from './middleware/security.js';
+
+// Production refuses to start with unsafe settings (weak secrets, development SMS, localhost addresses…).
+if (config.isProd) {
+  const { blockers, warnings } = preflight();
+  warnings.forEach(w => log('warn', 'launch check', { todo: w }));
+  if (blockers.length) { blockers.forEach(b => log('error', 'launch check failed', { fix: b })); process.exit(1); }
+}
 
 const app = createApp();
 const server = app.listen(config.port, () => {
@@ -34,3 +43,4 @@ async function shutdown() {
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+process.on('unhandledRejection', e => log('error', 'unhandled rejection', { error: e?.message ?? String(e) }));

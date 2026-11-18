@@ -1,85 +1,62 @@
-# PhysioConnect by Healthtropic
+# PhysioCare by Healthtropic
 
-Verified physiotherapy at home, matched by zone, safety rules and recovery needs.
-Version **0.3.0 · Phase 2 (Therapist and the visit)**. See [CHANGELOG.md](CHANGELOG.md).
+Verified physiotherapy at home in Patna: zone-aware booking, safety rules for every visit, cash and UPI payments,
+video sessions, referrals and partners, and a full staff console.
+Version **1.0.0 · Patna launch**. See [CHANGELOG.md](CHANGELOG.md), [docs/LAUNCH.md](docs/LAUNCH.md) and
+[docs/SECURITY.md](docs/SECURITY.md).
 
-## Repository
+## Apps
 
-| Path | What it is |
-| --- | --- |
-| `apps/api` | Node.js + Express REST API, PostgreSQL via Sequelize, migrations, tests |
-| `apps/web-admin` | Admin console (React + Vite + Tailwind) — super admin, ops, finance, city coordinator |
-| `apps/web-site` | Public website and web booking (React + Vite + Tailwind) |
-| `apps/mobile-patient` | Patient app (React Native, Expo SDK 58, Expo Router) |
-| `apps/mobile-therapist` | Therapist app (React Native, Expo SDK 58, Expo Router) |
-| `packages/tokens` | Style A (Clean Blue) design tokens + Tailwind preset, shared by every app |
-| `packages/shared` | Roles, zone colours, attribution sources, visit statuses, app version |
+| Path | App | Who uses it |
+| --- | --- | --- |
+| `apps/web-site` | Website: content from the CMS, booking, bookings, plans, refunds, chat, coins, partner portal, complaints | Patients, doctors and hospitals |
+| `apps/web-admin` | Staff console: dashboard, live visits & SOS, verification, payments, money, partners, website CMS, zones, users & blocks, grievances, messages, calendar, settings, audit log | Staff (by role) |
+| `apps/mobile-patient` | **PhysioCare** app (Expo SDK 58) | Patients |
+| `apps/mobile-therapist` | **PhysioCare Partner** app | Physiotherapists |
+| `apps/mobile-admin` | **PhysioCare Admin** app: SOS, live visits, approvals | Staff on the go |
+| `apps/api` | REST API (Node 24, Express, PostgreSQL via Sequelize), migrations, tests | Everything above |
+| `packages/tokens` | Brand: colours, Plus Jakarta Sans, the Care Cross logo (`brand.js`), Tailwind preset | All apps |
+| `packages/shared` | Roles, CMS block definitions, shared constants, app version | All apps |
+| `deploy/` | Production: Dockerfile, Caddy (HTTPS), docker compose, nightly backups | The server |
 
-Partner and super admin mobile apps come in later phases.
-
-## Run it locally
+## Run it on your computer
 
 Needs Node 20+ and Docker Desktop.
 
 ```bash
 npm install
-npm run db:up                         # Postgres 17 + PostGIS on :5434, Redis on :6380
-cp apps/api/.env.example apps/api/.env   # then set JWT_ACCESS_SECRET and OTP_SECRET
+npm run db:up                  # PostgreSQL on :5434
+cp apps/api/.env.example apps/api/.env
 npm run api:migrate
-npm run api:seed                      # cities, Patna zones, and the super admin (see below)
-npm run api:seed:demo                 # development only: 3 verified demo physios to book
-npm run api:dev                       # http://localhost:4000
-npm run admin:dev                     # http://localhost:5174
-npm run site:dev                      # http://localhost:5173
-npm test                              # API tests against a real Postgres
-npm run patient:dev                   # Expo dev server; set EXPO_PUBLIC_API_URL in apps/mobile-patient/.env
-npm run therapist:dev                 # same for apps/mobile-therapist
+npm run api:seed               # cities, Patna zones, starter website, super admin from SUPER_ADMIN_PHONE
+npm run api:seed:demo          # development only: demo physios, staff, patient and partner sign-ins
+npm run api:dev                # http://localhost:4000
+npm run site:dev               # http://localhost:5173
+npm run admin:dev              # http://localhost:5174
+npm run patient:dev            # Expo; set EXPO_PUBLIC_API_URL in each app's .env
+npm run therapist:dev
+npm run admin-app:dev
+npm test                       # API tests against a real PostgreSQL
+npm run api:check              # what's still missing before launch
+npm run brand                  # regenerate every logo, icon, splash and share image
 ```
 
-In development, `SMS_PROVIDER=console` prints OTP codes in the API log instead of sending SMS.
+Sign in with any demo number (e.g. `9000000011` ops admin, `9000000021` patient, `9000000001` physio). In
+development no SMS is sent: the code is shown on the sign-in screen and printed in the API terminal.
+
+## Configuration
+
+Every setting and business constant lives in each app's `.env` (start from `.env.example`). Settings also editable in
+the console (fees, coins, scheduling, website, maintenance…) take their first value from `.env` when you run
+`npm run api:seed`. Services switch on when their keys are added: MSG91 (SMS/WhatsApp), Expo push, Google Maps,
+Google Calendar, Calendly, Exotel (masked calls), Jitsi (video).
 
 ## Super admin
 
-There is no sign-up, API or screen that creates a super admin. Set `SUPER_ADMIN_PHONE` (and optionally
-`SUPER_ADMIN_NAME`) in the server environment and run `npm run api:seed`. The account then signs in with OTP.
+No sign-up, API or screen can create, give, remove or block a super admin. Set `SUPER_ADMIN_PHONE` on the server and
+run the seed; the account then signs in with OTP and gives staff roles in Staff & roles.
 
-## API (v1)
+## Go live
 
-| Method | Path | Auth | Purpose |
-| --- | --- | --- | --- |
-| GET | `/api/v1/status` | public | Overall status, services, maintenance, minimum app versions, version. Every app checks it on start and every 60 s |
-| POST | `/api/v1/auth/otp/send` | — | Send a 6-digit code (30 s resend gap, 5 per 15 min) |
-| POST | `/api/v1/auth/otp/verify` | — | Sign in or sign up. Optional `role` (patient, therapist, partner_owner), `ref` (referral / QR code), `utm`, `deviceId`, `selfReported` |
-| POST | `/api/v1/auth/refresh` | — | Rotate refresh token; reuse of an old token ends the whole session |
-| POST | `/api/v1/auth/logout` | — | Revoke the session |
-| GET / PATCH | `/api/v1/me` | Bearer | Current user, roles, how they joined |
-| GET | `/api/v1/zones?city=Patna` | public | Zones with colour and centre |
-| GET / PUT | `/api/v1/patient/profile` | patient | Condition, procedure, preferences |
-| GET / POST | `/api/v1/patient/addresses` | patient | Addresses; POST returns the zone |
-| POST | `/api/v1/patient/consents` | patient | Record consents |
-| POST | `/api/v1/therapists/match` | patient | Top 3 physios (gender rule, zone, radius) |
-| GET | `/api/v1/therapists/:id`, `/:id/slots` | signed in | Profile, prices, packages; free slots |
-| POST | `/api/v1/bookings/hold` | patient | Hold a slot for 10 minutes |
-| POST | `/api/v1/bookings/:visitId/confirm` | patient | Confirm with `cash` or `upi`; returns the payment (reference, QR) |
-| GET | `/api/v1/bookings` | patient | My bookings |
-| GET | `/api/v1/payments/:id`, `/:id/qr.png` | patient, physio, staff | Payment status; UPI QR image |
-| POST | `/api/v1/payments/:id/upi-proof` | patient | UTR and/or screenshot file id |
-| POST | `/api/v1/payments/:id/cash-received` | physio | Cash collected at the visit |
-| GET / POST | `/api/v1/admin/payments`, `/:id/review` | ops, finance, super admin | Verification queue; approve or reject |
-| POST / GET | `/api/v1/files` | signed in | Upload (multipart `file`, `purpose`, `visibility`); list my files |
-| GET | `/api/v1/files/:id`, `/:id/content[?download=1]` | owner, staff, or public | Metadata; view or download |
-| DELETE | `/api/v1/files/:id` | owner, staff | Hide (files are never deleted) |
-| GET / PUT | `/api/v1/therapist/profile`, `/availability`, PUT `/prices` | physio | Onboarding profile, weekly hours, prices |
-| POST | `/api/v1/therapist/documents`, `/agreement`, `/submit` | physio | Documents, agreement signature, submit for review |
-| GET | `/api/v1/therapist/visits` | physio | Schedule (patient details hidden until consent) |
-| POST | `/api/v1/therapist/visits/:id/consent`, `/on-the-way`, `/check-in`, `/nobody-present`, `/location`, `/complete` | physio | Visit lifecycle |
-| POST | `/api/v1/therapist/sos` | physio | Raise SOS with location |
-| GET | `/api/v1/bookings/:visitId/checkin-code`, `/notes` | patient | Check-in code (visit day only); session notes |
-| GET / POST | `/api/v1/admin/verification`, `/therapists/:id`, `/documents/:id/review`, `/therapists/:id/verify` | ops, super admin, coordinator | Verification |
-| GET / POST | `/api/v1/admin/live-visits`, `/sos/:id/acknowledge`, `/sos/:id/resolve` | ops, super admin, coordinator | Live visits and SOS |
-| GET | `/api/v1/notifications` | signed in | In-app notifications |
-
-## Versioning
-
-[Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`, one version for every app and the API.
-`0.1.0` Phase 0 · `0.2.0`–`0.6.0` Phases 1–5 · `1.0.0` public launch in Patna.
+Follow [docs/LAUNCH.md](docs/LAUNCH.md): server and DNS, secrets, `docker compose -f deploy/docker-compose.prod.yml up -d`,
+app store builds with EAS, the business checklist, backups, monitoring and the go-live test.

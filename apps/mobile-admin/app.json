@@ -3,7 +3,7 @@
     "name": "PhysioCare Admin",
     "slug": "physioconnect-admin",
     "scheme": "physioconnect-admin",
-    "version": "0.9.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -35,7 +35,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "in.healthtropic.physioconnect.admin"
+      "bundleIdentifier": "in.healthtropic.physioconnect.admin",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "in.healthtropic.physioconnect.admin",
@@ -45,7 +48,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

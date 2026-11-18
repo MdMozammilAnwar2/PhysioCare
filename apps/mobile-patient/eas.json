@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.YOUR-DOMAIN"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.YOUR-DOMAIN"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "internal",
+        "serviceAccountKeyPath": "./google-play-service-account.json"
+      },
+      "ios": {
+        "ascAppId": "SET-AFTER-CREATING-THE-APP-IN-APP-STORE-CONNECT"
+      }
+    }
+  }
+}
