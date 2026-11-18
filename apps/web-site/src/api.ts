@@ -38,7 +38,7 @@ export type Booking = { id: string; plan_id: string | null; rated: boolean; mode
 
 export const api = {
   status: () => raw<{ version: string; maintenance: { enabled: boolean; message: string | null } }>('/status'),
-  sendOtp: (phone: string) => post<{ resendAfterSeconds: number }>('/auth/otp/send', { phone }),
+  sendOtp: (phone: string) => post<{ resendAfterSeconds: number; devCode?: string }>('/auth/otp/send', { phone }),
   verifyOtp: async (phone: string, code: string, extra: { ref?: string; utm?: Record<string, string>; role?: string } = {}) => {
     const r = await post<{ isNew: boolean; user: { id: string; name: string | null }; tokens: { accessToken: string; refreshToken: string } }>('/auth/otp/verify', { phone, code, ...extra });
     store.set(r.tokens);

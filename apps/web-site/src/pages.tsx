@@ -28,11 +28,12 @@ export function SignIn() {
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(null); setBusy(true);
     try {
-      if (step === 'phone') { await api.sendOtp(phone); setStep('code'); return; }
+      if (step === 'phone') { const r = await api.sendOtp(phone); setDevCode(r.devCode ?? null); if (r.devCode) setCode(r.devCode); setStep('code'); return; }
       const att = pendingAttribution();
       const r = await api.verifyOtp(phone, code, asPartner ? { role: 'partner_owner' } : { ref: ref.trim() || undefined, utm: att.utm });
       if (asPartner) { nav(next); return; }
@@ -52,6 +53,7 @@ export function SignIn() {
           ) : (
             <Field label="6-digit code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" required />
           )}
+          {devCode && step === 'code' && <p className="text-sm rounded-xl bg-mist px-3 py-2">Development mode: no SMS is sent. Your code is <b className="font-mono">{devCode}</b> (filled in for you).</p>}
           <ErrorText error={error} />
           <Button disabled={busy}>{step === 'phone' ? 'Send code' : 'Continue'}</Button>
           <p className="text-xs text-sub">By continuing you agree to the Terms and Privacy Policy.</p>

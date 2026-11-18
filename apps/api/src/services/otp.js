@@ -16,7 +16,9 @@ export async function sendOtp(phone, { ip, purpose = 'login' } = {}) {
   const code = randomDigits(config.otp.length);
   await OtpRequest.create({ phone, codeHash: hashCode(phone, code), purpose, ip, expiresAt: new Date(Date.now() + config.otp.ttlMinutes * 60 * 1000) });
   await smsProvider().sendOtp(phone, code);
-  return { expiresInSeconds: config.otp.ttlMinutes * 60, resendAfterSeconds: config.otp.resendAfterSeconds };
+  // Development convenience only: the sign-in screen shows the code (never in production or with real SMS).
+  const showCode = config.otp.devShowCode && config.env === 'development' && config.sms.provider === 'console';
+  return { expiresInSeconds: config.otp.ttlMinutes * 60, resendAfterSeconds: config.otp.resendAfterSeconds, ...(showCode ? { devCode: code } : {}) };
 }
 
 export async function verifyOtp(phone, code) {

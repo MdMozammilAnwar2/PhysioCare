@@ -30,10 +30,11 @@ function SignIn({ onSignedIn }: { onSignedIn: (u: User) => void }) {
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(null); setBusy(true);
     try {
-      if (step === 'phone') { await api.sendOtp(phone); setStep('code'); }
+      if (step === 'phone') { const r = await api.sendOtp(phone); setDevCode(r.devCode ?? null); if (r.devCode) setCode(r.devCode); setStep('code'); }
       else onSignedIn(await api.verifyOtp(phone, code));
     } catch (err) { setError(err instanceof ApiError ? err.message : 'Something went wrong.'); } finally { setBusy(false); }
   }
@@ -51,6 +52,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (u: User) => void }) {
             <input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" required className="h-12 rounded-xl border border-line px-4 text-lg tracking-[0.4em] text-ink focus:outline-none focus:ring-2 focus:ring-brand" />
           </label>
         )}
+        {devCode && step === 'code' && <p className="text-sm rounded-xl bg-mist text-ink px-3 py-2">Development mode: no SMS is sent. Your code is <b className="font-mono">{devCode}</b> (filled in for you).</p>}
         {error && <p role="alert" className="text-sm text-danger-ink">{error}</p>}
         <button disabled={busy} className="h-12 rounded-xl bg-navy text-white font-bold disabled:opacity-60">{step === 'phone' ? 'Send code' : 'Sign in'}</button>
         <p className="text-xs text-sub">For PhysioCare staff only. Every action is saved to the audit log.</p>

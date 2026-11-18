@@ -37,7 +37,7 @@ export type Sos = { id: string; status: 'open' | 'acknowledged'; lat: number | n
 
 export const api = {
   status: () => call<Status>('/status'),
-  sendOtp: (phone: string) => post('/auth/otp/send', { phone }),
+  sendOtp: (phone: string) => post<{ devCode?: string }>('/auth/otp/send', { phone }),
   verifyOtp: async (phone: string, code: string) => {
     const r = await post<{ user: User; tokens: { accessToken: string; refreshToken: string } }>('/auth/otp/verify', { phone, code });
     S.set(r.tokens);

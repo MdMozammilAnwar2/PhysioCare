@@ -66,7 +66,7 @@ export type Visit = {
 
 export const api = {
   status: () => call<Status>('/status'),
-  sendOtp: (phone: string) => post('/auth/otp/send', { phone }),
+  sendOtp: (phone: string) => post<{ devCode?: string }>('/auth/otp/send', { phone }), // devCode only in local development
   verifyOtp: async (phone: string, code: string) => {
     const r = await post<{ isNew: boolean; user: { name: string | null }; tokens: { accessToken: string; refreshToken: string } }>('/auth/otp/verify', { phone, code, role: 'therapist' });
     await tokens.set(r.tokens);

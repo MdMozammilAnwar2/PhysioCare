@@ -54,6 +54,8 @@ export const config = {
     maxAttempts: num('OTP_MAX_ATTEMPTS', 5),
     maxSendsPer15Min: num('OTP_MAX_SENDS_PER_15_MIN', 5),
     resendAfterSeconds: num('OTP_RESEND_AFTER_SECONDS', 30),
+    // Development only (NODE_ENV=development and SMS_PROVIDER=console): show the code on the sign-in screen.
+    devShowCode: bool('OTP_DEV_SHOW_CODE', true),
   },
   sms: {
     provider: isTest ? 'memory' : env.SMS_PROVIDER || 'console',

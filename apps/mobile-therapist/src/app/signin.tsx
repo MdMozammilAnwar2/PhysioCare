@@ -14,7 +14,7 @@ export default function SignIn() {
   async function next() {
     setError(null); setBusy(true);
     try {
-      if (step === 'phone') { await api.sendOtp(phone); setStep('code'); return; }
+      if (step === 'phone') { const r = await api.sendOtp(phone); if (r.devCode) setCode(r.devCode); setStep('code'); return; }
       await api.verifyOtp(phone, code);
       router.replace('/');
     } catch (e) { setError(e instanceof ApiError ? e.message : 'Something went wrong.'); } finally { setBusy(false); }
