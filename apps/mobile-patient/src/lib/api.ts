@@ -1,5 +1,5 @@
 // API client for the patient app. Tokens in SecureStore; one automatic refresh on 401.
-import * as SecureStore from 'expo-secure-store';
+import { storage as SecureStore } from './storage';
 
 const BASE = `${process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:4000'}/api/v1`;
 
