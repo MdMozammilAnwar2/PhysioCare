@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/booking-state.ts","./src/main.tsx","./src/pages.tsx","./src/trust-pages.tsx","./src/ui.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/api.ts","./src/booking-state.ts","./src/growth-pages.tsx","./src/main.tsx","./src/pages.tsx","./src/trust-pages.tsx","./src/ui.tsx"],"version":"5.9.3"}

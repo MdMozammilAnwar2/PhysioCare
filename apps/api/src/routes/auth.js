@@ -9,6 +9,7 @@ import { asyncHandler, primaryRole, validate } from '../middleware/index.js';
 import { sendOtp, verifyOtp } from '../services/otp.js';
 import { issueTokens, revokeAllForUser, revokeRefreshToken, rotateRefreshToken, signAccessToken } from '../services/tokens.js';
 import { recordSignupAttribution } from '../services/attribution.js';
+import { onSignup } from '../services/growth.js';
 import { audit } from '../services/audit.js';
 
 export const authRouter = Router();
@@ -50,7 +51,8 @@ authRouter.post('/otp/verify', validate(verifySchema), asyncHandler(async (req, 
     if (!u) {
       u = await User.create({ phone }, { transaction });
       created = true;
-      await recordSignupAttribution(u, { ref, utm, deviceId, ip: req.ip, selfReported }, transaction);
+      const attribution = await recordSignupAttribution(u, { ref, utm, deviceId, ip: req.ip, selfReported }, transaction);
+      await onSignup(u, attribution, transaction);
       await audit({ actor: null, action: 'user.signup', targetType: 'user', targetId: u.id, after: { role: requestedRole ?? 'patient' }, ip: req.ip }, transaction);
     }
     // New accounts default to patient. Existing accounts only gain a role when the app asks for one

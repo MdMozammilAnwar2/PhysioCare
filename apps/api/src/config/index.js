@@ -33,5 +33,8 @@ export const config = {
     driver: env.STORAGE_DRIVER || 'local',
     dir: isTest ? new URL('../../storage-test', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1') : env.STORAGE_DIR || new URL('../../storage', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'),
   },
+  // Public URLs: QR codes and share links point at the API's /r/:code, which redirects to the website.
+  publicApiUrl: (env.PUBLIC_API_URL || 'http://localhost:4000').replace(/\/$/, ''),
+  siteUrl: env.SITE_URL || 'http://localhost:5173/',
   corsOrigins:(env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174').split(',').map(s => s.trim()),
 };

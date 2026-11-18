@@ -63,6 +63,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {isSignedIn() ? (
             <>
               <Link to="/bookings" className="hidden sm:inline">My bookings</Link>
+              <Link to="/rewards" className="hidden sm:inline">Refer &amp; coins</Link>
               <button onClick={() => api.signOut().then(() => navigate('/'))} className="text-sub">Sign out</button>
             </>
           ) : <Link to="/signin" className="hidden sm:inline">Sign in</Link>}

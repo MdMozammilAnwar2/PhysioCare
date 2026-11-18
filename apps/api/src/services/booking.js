@@ -9,6 +9,7 @@ import { genderRule } from './matching.js';
 import { schedulingRules } from './rules.js';
 import { audit } from './audit.js';
 import { accrueForPlan } from './money.js';
+import { addCoins, coinsForCheckout, onFirstPaid } from './growth.js';
 
 const one = async (sql, replacements, transaction) => (await sequelize.query(sql, { replacements, transaction }))[0][0];
 const notify = (userId, type, title, body, data, transaction) => sequelize.query(
@@ -78,7 +79,7 @@ export const upiUri = ({ upiId, payeeName }, amountPaise, reference) =>
   `upi://pay?${new URLSearchParams({ pa: upiId, pn: payeeName, am: (amountPaise / 100).toFixed(2), cu: 'INR', tn: reference })}`;
 
 // Patient picks Cash or UPI: the booking is confirmed now; the payment stays pending until verified.
-export async function confirmBooking({ patientId, visitId, method }) {
+export async function confirmBooking({ patientId, visitId, method, useCoins = false }) {
   const upi = await upiSettings();
   if (method === 'upi' && !upi.upiId) throw new HttpError(409, 'upi_not_configured', 'UPI payment isn’t set up yet. Choose cash.');
   return sequelize.transaction(async transaction => {
@@ -87,15 +88,19 @@ export async function confirmBooking({ patientId, visitId, method }) {
     if (!v) throw new HttpError(404, 'not_found', 'Booking not found.');
     if (v.status !== 'held' || new Date(v.hold_expires_at) < new Date()) throw new HttpError(409, 'hold_expired', 'This slot is no longer held. Pick a time again.');
     const reference = newReference();
+    // Coins pay up to maxCoinPct % of the price; the physio still earns on the full price (the platform absorbs it).
+    const c = useCoins ? await coinsForCheckout(patientId, v.price_paise, transaction) : { coins: 0, discountPaise: 0 };
+    const due = v.price_paise - c.discountPaise;
     await sequelize.query(`UPDATE visits SET status = 'booked', hold_expires_at = NULL, updated_at = now() WHERE id = :id`, { replacements: { id: v.id }, transaction });
     await sequelize.query(`UPDATE plans SET status = 'active', updated_at = now() WHERE id = :id`, { replacements: { id: v.plan_id }, transaction });
-    const pay = await one(`INSERT INTO payments (patient_id, plan_id, amount_paise, provider, method, reference, status) VALUES (:u, :plan, :amt, 'offline', :m, :ref, 'pending') RETURNING id`,
-      { u: patientId, plan: v.plan_id, amt: v.price_paise, m: method, ref: reference }, transaction);
+    const pay = await one(`INSERT INTO payments (patient_id, plan_id, amount_paise, provider, method, reference, status, coins_used, coin_discount_paise) VALUES (:u, :plan, :amt, 'offline', :m, :ref, 'pending', :coins, :disc) RETURNING id`,
+      { u: patientId, plan: v.plan_id, amt: due, m: method, ref: reference, coins: c.coins, disc: c.discountPaise }, transaction);
+    if (c.coins) await addCoins({ userId: patientId, delta: -c.coins, reason: 'redeem', refId: pay.id, note: `Booking ${reference}` }, transaction);
     await notify(patientId, 'booking_confirmed', 'You’re booked', method === 'upi' ? `Pay by UPI with reference ${reference}, then upload the screenshot.` : 'Pay your physio in cash at the visit and ask for a receipt in the app.', { visitId: v.id, paymentId: pay.id }, transaction);
     await notify(v.therapist_id, 'new_booking', 'New booking', method === 'cash' ? 'Collect cash at the visit and mark it received in the app.' : 'Patient is paying by UPI.', { visitId: v.id }, transaction);
     return {
       visitId: v.id, planId: v.plan_id,
-      payment: { id: pay.id, method, reference, amountPaise: v.price_paise, status: 'pending', ...(method === 'upi' ? { upiId: upi.upiId, payeeName: upi.payeeName, upiUri: upiUri(upi, v.price_paise, reference), qrUrl: `/api/v1/payments/${pay.id}/qr.png` } : {}) },
+      payment: { id: pay.id, method, reference, amountPaise: due, coinsUsed: c.coins, coinDiscountPaise: c.discountPaise, status: 'pending', ...(method === 'upi' ? { upiId: upi.upiId, payeeName: upi.payeeName, upiUri: upiUri(upi, due, reference), qrUrl: `/api/v1/payments/${pay.id}/qr.png` } : {}) },
     };
   });
 }
@@ -145,6 +150,7 @@ export async function reviewPayment({ admin, paymentId, approve, note, ip }) {
       await sequelize.query(`UPDATE payments SET status = 'paid', invoice_no = :inv, verified_by = :a, verified_at = now(), review_note = :n, updated_at = now() WHERE id = :id`, { replacements: { inv: invoiceNo, a: admin.id, n: note ?? null, id: p.id }, transaction });
       await sequelize.query(`UPDATE attributions SET locked_at = COALESCE(locked_at, now()), updated_at = now() WHERE user_id = :u`, { replacements: { u: p.patient_id }, transaction });
       await accrueForPlan(p.plan_id, transaction); // visits already completed now earn
+      await onFirstPaid(p.patient_id, p.id, transaction); // referral coins and partner reward (once per patient)
       await notify(p.patient_id, 'payment_verified', 'Payment received', `Thank you. Invoice ${invoiceNo} is ready.`, { paymentId: p.id }, transaction);
     } else {
       await sequelize.query(`UPDATE payments SET status = 'rejected', verified_by = :a, verified_at = now(), review_note = :n, updated_at = now() WHERE id = :id`, { replacements: { a: admin.id, n: note ?? null, id: p.id }, transaction });

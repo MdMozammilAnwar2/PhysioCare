@@ -63,7 +63,11 @@ export const api = {
   therapist: (id: string) => call<{ therapist: { packages: { id: string; name: string; mode: string; sessions: number; price_paise: number }[]; prices: { mode: string; price_paise: number }[] } }>(`/therapists/${id}`),
   slots: (id: string, q: Record<string, string>) => call<{ slots: string[] }>(`/therapists/${id}/slots?${new URLSearchParams(q)}`),
   hold: (b: object) => post<{ visitId: string; amountPaise: number; holdExpiresAt: string }>('/bookings/hold', b),
-  confirm: (visitId: string, method: 'cash' | 'upi') => post<{ payment: Payment }>(`/bookings/${visitId}/confirm`, { method }),
+  confirm: (visitId: string, method: 'cash' | 'upi', useCoins = false) => post<{ payment: Payment }>(`/bookings/${visitId}/confirm`, { method, useCoins }),
+  // Phase 4: coins and referral.
+  coins: () => call<{ balance: number; rupeesPaise: number; entries: { id: number; delta: number; reason: string; note: string | null; created_at: string }[] }>('/growth/coins'),
+  coinCheckout: (amountPaise: number) => call<{ coins: number; discountPaise: number; maxPct: number }>(`/growth/coins/checkout?amountPaise=${amountPaise}`),
+  referral: () => call<{ code: string; url: string; shareText: string; joined: number; booked: number; referrerCoins: number; welcomeCoins: number }>('/growth/referral'),
   payment: (id: string) => call<{ payment: Payment }>(`/payments/${id}`),
   upiProof: (id: string, b: { utr?: string; fileId?: string }) => post<{ status: string }>(`/payments/${id}/upi-proof`, b),
   // Multipart upload to the permanent file store. React Native's FormData takes { uri, name, type }.

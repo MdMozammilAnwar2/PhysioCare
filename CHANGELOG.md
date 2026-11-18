@@ -5,6 +5,32 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [0.5.0] — Phase 4 · Growth: partners, referrals and coins
+
+### Added (API)
+- **Partners** (doctors, hospitals, clinics, pathology labs, physiotherapists, pharmacies, gyms, others): apply from
+  the website or be added by staff; ops approve, reject or suspend (QR codes stop working when suspended).
+  Approval creates the main QR; partners can create up to 50 labelled QRs (e.g. "OPD reception").
+- **Tracked links** `/r/:code`: every QR scan or link click is logged, then redirects to the website with the code,
+  which is credited at sign-up (first valid source wins, locked at the first paid visit).
+- **Coins** (10 coins = ₹1): welcome coins for anyone who joins through a link or QR; referrer coins when a friend's
+  first visit is paid (once per friend); coins pay up to a set % of a booking (the physio still earns on the full
+  price); coins come back if the booking is cancelled before it happens, and pro rata with a refund. Super admin can
+  adjust a patient's coins with a reason (audit-logged). Flagged sign-ups get nothing.
+- **Partner rewards**: a fixed amount per new patient's first paid visit (default or per partner); finance records the
+  transfer reference and the partner is notified.
+- Growth rules (super admin): welcome coins, referrer coins, max coin %, default partner reward.
+  Defaults: 500, 1,000, 20%, ₹100.
+- Attribution report: sign-ups and paying patients by source, top partners, top patient referrers, coins issued/redeemed.
+- New settings: `PUBLIC_API_URL` (QR codes point here) and `SITE_URL` (where `/r/:code` sends people).
+
+### Added (apps)
+- **Admin console**: Partners (review, add directly, detail with QR codes to download, scans/sign-ups/paid per QR,
+  approve with a custom reward, suspend, mark rewards paid), Where patients come from, Coins & rewards.
+- **Website**: Refer & coins (balance, history, share via WhatsApp), "Use coins" at payment, partner portal at
+  `/partner` (sign in, apply, QR codes to print, results, rewards, payout details).
+- **Patient app**: Refer & coins screen, "Use coins" at payment.
+
 ## [0.4.0] — Phase 3 · Money and trust
 
 ### Added (apps)

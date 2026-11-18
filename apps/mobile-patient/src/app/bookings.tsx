@@ -41,6 +41,7 @@ export default function Bookings() {
         </Card>
       ))}
       <Button title="My plans and refunds" variant="ghost" onPress={() => router.push('/plans')} />
+      <Button title="Refer & coins" variant="ghost" onPress={() => router.push('/rewards')} />
       <Button title="Sign out" variant="ghost" onPress={async () => { await tokens.clear(); router.replace('/'); }} />
     </Screen>
   );

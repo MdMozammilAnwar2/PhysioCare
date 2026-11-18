@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { api, ApiError, isSignedIn, rupees, type Booking, type Match, type Package, type Payment, type Zone } from './api';
+import { api, ApiError, growth, isSignedIn, rupees, type Booking, type Match, type Package, type Payment, type Zone } from './api';
 import { captureAttribution, draft, pendingAttribution } from './booking-state';
 import { Button, Card, Chips, ErrorText, Field, Page, ZonePill } from './ui';
 
@@ -39,6 +39,7 @@ export function SignIn() {
   const nav = useNavigate();
   const loc = useLocation();
   const next = new URLSearchParams(loc.search).get('next') || '/book';
+  const asPartner = new URLSearchParams(loc.search).get('as') === 'partner';
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [ref, setRef] = useState(pendingAttribution().ref ?? '');
@@ -51,19 +52,20 @@ export function SignIn() {
     try {
       if (step === 'phone') { await api.sendOtp(phone); setStep('code'); return; }
       const att = pendingAttribution();
-      const r = await api.verifyOtp(phone, code, { ref: ref.trim() || undefined, utm: att.utm });
+      const r = await api.verifyOtp(phone, code, asPartner ? { role: 'partner_owner' } : { ref: ref.trim() || undefined, utm: att.utm });
+      if (asPartner) { nav(next); return; }
       localStorage.removeItem('pc.attribution');
       nav(r.isNew || !r.user.name ? `/about-you?next=${encodeURIComponent(next)}` : next);
     } catch (err) { setError(msg(err)); } finally { setBusy(false); }
   }
   return (
-    <Page title={step === 'phone' ? 'Sign in or create an account' : 'Enter the code'} sub={step === 'phone' ? 'No password needed. We text you a 6-digit code.' : `Sent to +91 ${phone}.`}>
+    <Page kicker={asPartner ? 'Partner portal' : undefined} title={step === 'phone' ? 'Sign in or create an account' : 'Enter the code'} sub={step === 'phone' ? 'No password needed. We text you a 6-digit code.' : `Sent to +91 ${phone}.`}>
       <form onSubmit={submit} className="contents">
         <Card>
           {step === 'phone' ? (
             <>
               <Field label="Mobile number" value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="98765 43210" required />
-              <Field label="Doctor’s or friend’s referral code (optional)" value={ref} onChange={e => setRef(e.target.value)} placeholder="e.g. K7MP-4QXR or ROHIT25" />
+              {!asPartner && <Field label="Doctor’s or friend’s referral code (optional)" value={ref} onChange={e => setRef(e.target.value)} placeholder="e.g. K7MP-4QXR or ROHIT25" />}
             </>
           ) : (
             <Field label="6-digit code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" required />
@@ -318,6 +320,9 @@ export function ChoosePayment() {
   const nav = useNavigate();
   const d = draft.get();
   const [method, setMethod] = useState<'upi' | 'cash'>('upi');
+  const [coins, setCoins] = useState<{ coins: number; discountPaise: number; maxPct: number } | null>(null);
+  const [useCoins, setUseCoins] = useState(true);
+  useEffect(() => { if (d.hold) growth.checkout(d.hold.amountPaise).then(setCoins).catch(() => undefined); }, [d.hold?.amountPaise]); // eslint-disable-line react-hooks/exhaustive-deps
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   if (!d.hold) return <Navigate to="/bookings" replace />;
@@ -325,16 +330,24 @@ export function ChoosePayment() {
   async function confirm() {
     setError(null); setBusy(true);
     try {
-      const r = await api.confirm(h.visitId, method);
+      const r = await api.confirm(h.visitId, method, useCoins && Boolean(coins?.coins));
       draft.clear();
       nav(`/payments/${r.payment.id}?new=1`);
     } catch (e) { setError(msg(e)); } finally { setBusy(false); }
   }
+  const off = useCoins && coins?.coins ? coins.discountPaise : 0;
+  const due = h.amountPaise - off;
   return (
-    <Page kicker="Almost done" title="How will you pay?" sub={`${d.therapistName} · ${fmtDay(h.start)} · ${fmtTime(h.start)} · ${rupees(h.amountPaise)}`}>
+    <Page kicker="Almost done" title="How will you pay?" sub={`${d.therapistName} · ${fmtDay(h.start)} · ${fmtTime(h.start)} · ${rupees(due)}`}>
       <Card>
-        <PlanOption on={method === 'upi'} onClick={() => setMethod('upi')} title="UPI · scan our QR" sub="Google Pay, PhonePe, Paytm or any UPI app. Upload the screenshot after paying." price={h.amountPaise} />
-        <PlanOption on={method === 'cash'} onClick={() => setMethod('cash')} title="Cash at the visit" sub="Pay your physio. You’ll get a receipt in the app once we confirm it." price={h.amountPaise} />
+        {coins && coins.coins > 0 && (
+          <label className="flex items-center gap-3 rounded-xl bg-canvas px-4 py-3 cursor-pointer">
+            <input type="checkbox" checked={useCoins} onChange={e => setUseCoins(e.target.checked)} className="w-5 h-5 accent-brand" />
+            <span className="flex-1"><b>Use {coins.coins.toLocaleString('en-IN')} coins</b> · save {rupees(coins.discountPaise)}<span className="block text-xs text-sub">Coins can pay up to {coins.maxPct}% of a booking. 10 coins = ₹1.</span></span>
+          </label>
+        )}
+        <PlanOption on={method === 'upi'} onClick={() => setMethod('upi')} title="UPI · scan our QR" sub="Google Pay, PhonePe, Paytm or any UPI app. Upload the screenshot after paying." price={due} />
+        <PlanOption on={method === 'cash'} onClick={() => setMethod('cash')} title="Cash at the visit" sub="Pay your physio. You’ll get a receipt in the app once we confirm it." price={due} />
         <ErrorText error={error} />
         <Button variant="dark" disabled={busy} onClick={confirm}>{busy ? 'Confirming…' : 'Confirm booking'}</Button>
       </Card>

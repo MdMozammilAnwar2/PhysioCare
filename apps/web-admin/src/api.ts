@@ -88,3 +88,28 @@ export const money = {
   rules: () => call<{ rules: MoneyRules }>('/admin/money/money-rules'),
   saveRules: (r: MoneyRules) => call<{ rules: MoneyRules }>('/admin/money/money-rules', { method: 'PUT', body: JSON.stringify(r) }),
 };
+
+// ---------- Phase 4: growth ----------
+export type PartnerRow = { id: string; name: string; type: string; status: string; contact_name: string | null; phone: string | null; registration_no: string | null; created_at: string; signups: number; paid: number; due_paise: number };
+export type PartnerLink = { id: string; code: string; meta: { label?: string }; active: boolean; scans: number; clicks: number; signups: number; paid: number; url: string; qrUrl: string };
+export type PartnerReward = { id: string; amount_paise: number; status: string; reference: string | null; paid_at: string | null; created_at: string; label: string | null };
+export type GrowthRules = { welcomeCoins: number; referrerCoins: number; maxCoinPct: number; partnerRewardPaise: number };
+export type Attribution = {
+  from: string; to: string;
+  bySource: { source: string; signups: number; paid: number; flagged: number }[];
+  partners: { id: string; name: string; type: string; signups: number; paid: number; reward_paise: number }[];
+  referrers: { id: string; name: string | null; phone: string; signups: number; paid: number }[];
+  coins: { issued: number; redeemed: number };
+};
+export const growth = {
+  partners: (status = 'pending') => call<{ partners: PartnerRow[] }>(`/admin/growth/partners?status=${status}`),
+  partner: (id: string) => call<{ partner: Record<string, string | number | null> & { id: string; name: string; type: string; status: string; reward_paise: number | null }; links: PartnerLink[]; earnedPaise: number; paidPaise: number; rewards: PartnerReward[]; defaultRewardPaise: number }>(`/admin/growth/partners/${id}`),
+  createPartner: (b: Record<string, unknown>) => post<{ partnerId: string; code: string }>('/admin/growth/partners', b),
+  decide: (id: string, b: { approve: boolean; note?: string; rewardPaise?: number }) => post(`/admin/growth/partners/${id}/decide`, b),
+  payRewards: (id: string, reference: string) => post<{ count: number; totalPaise: number }>(`/admin/growth/partners/${id}/rewards/paid`, { reference }),
+  attribution: (from: string, to: string) => call<Attribution>(`/admin/growth/attribution?from=${from}&to=${to}`),
+  rules: () => call<{ rules: GrowthRules; coinsPerRupee: number }>('/admin/growth/rules'),
+  saveRules: (r: GrowthRules) => call<{ rules: GrowthRules }>('/admin/growth/rules', { method: 'PUT', body: JSON.stringify(r) }),
+  adjustCoins: (phone: string, delta: number, note: string) => post('/admin/growth/coins/adjust', { phone, delta, note }),
+};
+export const PARTNER_TYPE_LABEL: Record<string, string> = { doctor: 'Doctor', hospital: 'Hospital', clinic: 'Clinic', pathology_lab: 'Pathology lab', physiotherapist: 'Physiotherapist', pharmacy: 'Pharmacy', gym: 'Gym', other: 'Other' };

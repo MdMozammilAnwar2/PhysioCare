@@ -39,7 +39,7 @@ export type Booking = { id: string; plan_id: string | null; rated: boolean; mode
 export const api = {
   status: () => raw<{ version: string; maintenance: { enabled: boolean; message: string | null } }>('/status'),
   sendOtp: (phone: string) => post<{ resendAfterSeconds: number }>('/auth/otp/send', { phone }),
-  verifyOtp: async (phone: string, code: string, extra: { ref?: string; utm?: Record<string, string> } = {}) => {
+  verifyOtp: async (phone: string, code: string, extra: { ref?: string; utm?: Record<string, string>; role?: string } = {}) => {
     const r = await post<{ isNew: boolean; user: { id: string; name: string | null }; tokens: { accessToken: string; refreshToken: string } }>('/auth/otp/verify', { phone, code, ...extra });
     store.set(r.tokens);
     return r;
@@ -56,7 +56,7 @@ export const api = {
   slots: (id: string, q: { mode: string; from: string; days: number; addressId?: string }) =>
     raw<{ slots: string[] }>(`/therapists/${id}/slots?${new URLSearchParams(Object.entries(q).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))}`),
   hold: (b: Record<string, unknown>) => post<Hold>('/bookings/hold', b),
-  confirm: (visitId: string, method: 'cash' | 'upi') => post<{ visitId: string; payment: Payment }>(`/bookings/${visitId}/confirm`, { method }),
+  confirm: (visitId: string, method: 'cash' | 'upi', useCoins = false) => post<{ visitId: string; payment: Payment }>(`/bookings/${visitId}/confirm`, { method, useCoins }),
   payment: (id: string) => raw<{ payment: Payment }>(`/payments/${id}`),
   upiProof: (id: string, b: { utr?: string; fileId?: string }) => post<{ status: string }>(`/payments/${id}/upi-proof`, b),
   // Multipart upload to the permanent file store.
@@ -90,6 +90,21 @@ export const trust = {
   rate: (visitId: string, b: { stars: number; tags?: string[]; comment?: string }) => post(`/patient/visits/${visitId}/rating`, b),
   messages: (planId: string, after = 0) => raw<{ messages: ChatMessage[] }>(`/chat/${planId}/messages?after=${after}`),
   send: (planId: string, body: string) => post<{ id: number }>(`/chat/${planId}/messages`, { body }),
+};
+
+// ---------- Phase 4: coins, referral, partner portal ----------
+export type CoinWallet = { balance: number; rupeesPaise: number; coinsPerRupee: number; entries: { id: number; delta: number; reason: string; note: string | null; created_at: string }[] };
+export type Referral = { code: string; url: string; shareText: string; joined: number; booked: number; referrerCoins: number; welcomeCoins: number; coinsPerRupee: number };
+export type PartnerLink = { id: string; code: string; meta: { label?: string }; active: boolean; scans: number; clicks: number; signups: number; paid: number; url: string; qrUrl: string };
+export type PartnerMe = { partner: null | { id: string; name: string; type: string; status: string; contact_name: string | null; registration_no: string | null; payout_to: string | null; address: string | null; decision_note: string | null; access: string }; types: string[]; links?: PartnerLink[]; earnedPaise?: number; paidPaise?: number; rewardPaise?: number; rewards?: { id: string; amount_paise: number; status: string; reference: string | null; created_at: string; label: string | null }[] };
+export const growth = {
+  coins: () => raw<CoinWallet>('/growth/coins'),
+  checkout: (amountPaise: number) => raw<{ balance: number; coins: number; discountPaise: number; maxPct: number }>(`/growth/coins/checkout?amountPaise=${amountPaise}`),
+  referral: () => raw<Referral>('/growth/referral'),
+  partner: () => raw<PartnerMe>('/partner/me'),
+  apply: (b: Record<string, string>) => post<{ partnerId: string }>('/partner/apply', b),
+  updatePartner: (b: Record<string, string>) => raw('/partner/me', { method: 'PATCH', body: JSON.stringify(b) }),
+  addLink: (label: string) => post<{ link: PartnerLink }>('/partner/links', { label }),
 };
 
 export const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;

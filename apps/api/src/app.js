@@ -13,6 +13,7 @@ import { adminRouter } from './routes/admin.js';
 import { zonesRouter } from './routes/public.js';
 import { filesRouter } from './routes/files.js';
 import { adminMoneyRouter, chatRouter, patientMoneyRouter, walletRouter } from './routes/money.js';
+import { adminGrowthRouter, growthRouter, linkRouter, partnerRouter } from './routes/growth.js';
 
 export function createApp() {
   const app = express();
@@ -32,6 +33,7 @@ export function createApp() {
   app.use('/api/v1/payments', paymentsRouter);
   app.use('/api/v1/admin/payments', adminPaymentsRouter);
   app.use('/api/v1/admin/money', adminMoneyRouter);
+  app.use('/api/v1/admin/growth', adminGrowthRouter);
   app.use('/api/v1/admin', adminRouter);
   app.use('/api/v1/therapist/wallet', walletRouter);
   app.use('/api/v1/therapist', therapistRouter);
@@ -40,6 +42,9 @@ export function createApp() {
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/zones', zonesRouter);
   app.use('/api/v1/files', filesRouter);
+  app.use('/api/v1/growth', growthRouter);
+  app.use('/api/v1/partner', partnerRouter);
+  app.use('/r', linkRouter); // QR scans and shared links
 
   app.use(notFound);
   app.use(errorHandler);

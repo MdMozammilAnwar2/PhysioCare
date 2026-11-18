@@ -2,6 +2,7 @@
 import { sequelize } from '../db/index.js';
 import { HttpError } from '../lib/util.js';
 import { audit } from './audit.js';
+import { addCoins } from './growth.js';
 
 const q = async (sql, replacements, transaction) => (await sequelize.query(sql, { replacements, transaction }))[0];
 const one = async (sql, replacements, transaction) => (await q(sql, replacements, transaction))[0];
@@ -107,12 +108,17 @@ export async function markPayoutPaid({ admin, payoutId, method, reference, ip })
 // ---------- refunds of unused sessions ----------
 export async function refundEstimate(patientId, planId) {
   const plan = await one(`SELECT p.id, p.price_paise, p.sessions_total, p.status,
+      (SELECT pay.amount_paise FROM payments pay WHERE pay.plan_id = p.id AND pay.status = 'paid' LIMIT 1) AS cash_paise,
+      (SELECT pay.coins_used FROM payments pay WHERE pay.plan_id = p.id AND pay.status = 'paid' LIMIT 1) AS coins_used,
       (SELECT count(*)::int FROM visits v WHERE v.plan_id = p.id AND v.status IN ('checked_in', 'completed', 'late_cancelled', 'no_show')) AS used,
       EXISTS (SELECT 1 FROM payments pay WHERE pay.plan_id = p.id AND pay.status = 'paid') AS paid
     FROM plans p WHERE p.id = :id AND p.patient_id = :u`, { id: planId, u: patientId });
   if (!plan) throw new HttpError(404, 'not_found', 'Plan not found.');
   const unused = Math.max(0, plan.sessions_total - plan.used);
-  return { planId: plan.id, paid: plan.paid, status: plan.status, sessionsTotal: plan.sessions_total, used: plan.used, unused, amountPaise: Math.floor((plan.price_paise * unused) / plan.sessions_total) };
+  return { planId: plan.id, paid: plan.paid, status: plan.status, sessionsTotal: plan.sessions_total, used: plan.used, unused,
+    // Cash back pro rata on what was actually paid; coins used come back pro rata as coins.
+    amountPaise: Math.floor(((plan.cash_paise ?? plan.price_paise) * unused) / plan.sessions_total),
+    coinsBack: Math.floor(((plan.coins_used ?? 0) * unused) / plan.sessions_total) };
 }
 
 export async function requestRefund({ patientId, planId, refundTo }) {
@@ -121,8 +127,8 @@ export async function requestRefund({ patientId, planId, refundTo }) {
   if (est.status !== 'active') throw new HttpError(409, 'plan_not_active', 'This plan can’t be refunded.');
   if (est.amountPaise <= 0) throw new HttpError(409, 'nothing_to_refund', 'All sessions in this plan have been used.');
   try {
-    const r = await one(`INSERT INTO refunds (patient_id, plan_id, amount_paise, reason, refund_to) VALUES (:u, :p, :a, 'unused_sessions', :to) RETURNING id, amount_paise, status`,
-      { u: patientId, p: planId, a: est.amountPaise, to: refundTo });
+    const r = await one(`INSERT INTO refunds (patient_id, plan_id, amount_paise, coins_back, reason, refund_to) VALUES (:u, :p, :a, :c, 'unused_sessions', :to) RETURNING id, amount_paise, status`,
+      { u: patientId, p: planId, a: est.amountPaise, c: est.coinsBack, to: refundTo });
     return { refundId: r.id, amountPaise: r.amount_paise, status: r.status };
   } catch (e) {
     if (e.name === 'SequelizeUniqueConstraintError') throw new HttpError(409, 'refund_open', 'A refund for this plan is already in progress.');
@@ -139,6 +145,7 @@ export async function decideRefund({ admin, refundId, approve, note, ip }) {
       // Future visits in the plan are cancelled; the plan ends.
       await q(`UPDATE visits SET status = 'cancelled', cancel_reason = 'plan_refunded', updated_at = now() WHERE plan_id = :p AND status IN ('held', 'booked')`, { p: r.plan_id }, t);
       if (r.reason === 'unused_sessions') await q(`UPDATE plans SET status = 'refunded', updated_at = now() WHERE id = :p`, { p: r.plan_id }, t);
+      if (r.coins_back > 0) await addCoins({ userId: r.patient_id, delta: r.coins_back, reason: 'refund_return', refId: r.id, note: 'Unused sessions refunded' }, t);
     }
     await q(`UPDATE refunds SET status = :s, note = :n, decided_by = :a, decided_at = now() WHERE id = :id`, { s: approve ? 'approved' : 'rejected', n: note ?? null, a: admin.id, id: r.id }, t);
     await notify(r.patient_id, approve ? 'refund_approved' : 'refund_rejected', approve ? 'Refund approved' : 'Refund not approved',

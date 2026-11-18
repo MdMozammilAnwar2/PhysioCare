@@ -5,6 +5,7 @@ import { HttpError, hmac } from '../lib/util.js';
 import { istDate } from '../lib/time.js';
 import { audit } from './audit.js';
 import { accrueForPlan } from './money.js';
+import { returnCoinsForPlan } from './growth.js';
 
 const one = async (sql, replacements, transaction) => (await sequelize.query(sql, { replacements, transaction }))[0][0];
 const notify = (userId, type, title, body, data, transaction) => sequelize.query(
@@ -39,6 +40,7 @@ export async function respondConsent({ therapistId, visitId, accept, ip }) {
       // Declining frees the slot; the patient is offered female physios. No effect on the physio's ranking.
       await sequelize.query(`UPDATE visits SET physio_consent = 'declined', physio_consent_at = now(), status = 'cancelled', cancel_reason = 'physio_declined_consent', updated_at = now() WHERE id = :id`, { replacements: { id: v.id }, transaction: t });
       await sequelize.query(`UPDATE payments SET status = 'rejected', review_note = 'Visit cancelled before it happened; nothing to pay.', updated_at = now() WHERE plan_id = :p AND status IN ('pending', 'submitted')`, { replacements: { p: v.plan_id }, transaction: t });
+      await returnCoinsForPlan(v.plan_id, t);
       await notify(v.patient_id, 'physio_declined', 'Please choose another physio', 'This physio can’t take the visit. Choose a female physio at the same time; nothing to pay for the cancelled visit.', { visitId: v.id }, t);
     }
     return { physioConsent: accept ? 'accepted' : 'declined' };

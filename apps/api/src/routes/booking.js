@@ -80,8 +80,8 @@ bookingsRouter.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Patient picks Cash or UPI for a held slot; the booking is confirmed at once.
-bookingsRouter.post('/:visitId/confirm', validate(z.object({ method: z.enum(['cash', 'upi']) })), asyncHandler(async (req, res) => {
-  res.json(await confirmBooking({ patientId: req.user.id, visitId: req.params.visitId, method: req.body.method }));
+bookingsRouter.post('/:visitId/confirm', validate(z.object({ method: z.enum(['cash', 'upi']), useCoins: z.boolean().optional() })), asyncHandler(async (req, res) => {
+  res.json(await confirmBooking({ patientId: req.user.id, visitId: req.params.visitId, method: req.body.method, useCoins: req.body.useCoins }));
 }));
 
 // ---------- payments (Cash, UPI-QR) ----------

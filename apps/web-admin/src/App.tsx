@@ -4,6 +4,7 @@ import { ADMIN_ROLES } from '@physioconnect/shared';
 import { api, ApiError, hasSession, type Status, type User } from './api';
 import { Header, Live, Payments, TherapistReview, VerificationQueue } from './pages';
 import { Incidents, MoneyRulesPage, Payouts, Refunds, Tds } from './money-pages';
+import { GrowthReport, GrowthRulesPage, PartnerDetail, Partners } from './growth-pages';
 
 // Checks the public status API on start and every 60 s, like every PhysioConnect app.
 function useStatus() {
@@ -63,6 +64,9 @@ const NAV: [string, string, string[]][] = [
   ['/payouts', 'Payouts', ['finance', 'super_admin']],
   ['/tds', 'TDS report', ['finance', 'super_admin']],
   ['/money-rules', 'Fees, TDS & holds', ['finance', 'super_admin']],
+  ['/partners', 'Partners', ['ops_admin', 'city_coordinator', 'finance', 'super_admin']],
+  ['/growth', 'Where patients come from', ['ops_admin', 'city_coordinator', 'finance', 'super_admin']],
+  ['/growth-rules', 'Coins & rewards', ['ops_admin', 'finance', 'super_admin']],
 ];
 
 function Console({ user, status, onSignOut }: { user: User; status: Status | null; onSignOut: () => void }) {
@@ -90,6 +94,10 @@ function Console({ user, status, onSignOut }: { user: User; status: Status | nul
           <Route path="/payouts" element={<Payouts />} />
           <Route path="/tds" element={<Tds />} />
           <Route path="/money-rules" element={<MoneyRulesPage canEdit={user.roles.includes('super_admin')} />} />
+          <Route path="/partners" element={<Partners canAdd={user.roles.some(r => ['ops_admin', 'city_coordinator', 'super_admin'].includes(r))} />} />
+          <Route path="/partners/:id" element={<PartnerDetail canDecide={user.roles.some(r => ['ops_admin', 'city_coordinator', 'super_admin'].includes(r))} canPay={user.roles.some(r => r === 'finance' || r === 'super_admin')} />} />
+          <Route path="/growth" element={<GrowthReport />} />
+          <Route path="/growth-rules" element={<GrowthRulesPage canEdit={user.roles.includes('super_admin')} />} />
           <Route path="*" element={nav[0] ? <Navigate to={nav[0][0]} replace /> : <Header title="No pages for your role yet" />} />
         </Routes>
       </main>
