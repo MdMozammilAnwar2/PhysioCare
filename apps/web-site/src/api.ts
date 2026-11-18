@@ -50,7 +50,7 @@ export const api = {
   saveProfile: (b: Record<string, unknown>) => raw('/patient/profile', { method: 'PUT', body: JSON.stringify(b) }),
   consents: (consents: { document: string; version: string; accepted: boolean }[]) => post('/patient/consents', { consents }),
   zones: () => raw<{ zones: Zone[] }>('/zones?city=Patna'),
-  addAddress: (b: { line1: string; landmark?: string; lat: number; lng: number }) => post<{ id: string; zone: Zone & { outsideService?: boolean } }>('/patient/addresses', b),
+  addAddress: (b: { line1: string; landmark?: string; lat: number; lng: number; placeId?: string; formatted?: string }) => post<{ id: string; zone: Zone & { outsideService?: boolean } }>('/patient/addresses', b),
   match: (b: { mode: string; addressId?: string; familyPresent?: boolean }) => post<{ zone: Zone | null; matches: Match[] }>('/therapists/match', b),
   therapist: (id: string) => raw<{ therapist: { id: string; name: string; packages: Package[]; prices: { mode: string; price_paise: number }[] } }>(`/therapists/${id}`),
   slots: (id: string, q: { mode: string; from: string; days: number; addressId?: string }) =>
@@ -146,5 +146,21 @@ export const calendar = {
     if (!res.ok) throw new ApiError(res.status, 'ics_failed', 'Couldn’t create the calendar file.');
     const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = 'physiocare-visit.ics'; a.click();
   },
+};
+// ---------- Phase 8: maps, calls, notifications ----------
+export type PlacePick = { placeId: string; formatted: string; lat: number; lng: number };
+export type Note = { id: string; type: string; title: string; body: string | null; read_at: string | null; created_at: string };
+export const maps = {
+  config: () => raw<{ search: boolean }>('/maps/config'),
+  search: (q: string, session: string) => raw<{ results: { placeId: string; main?: string; secondary?: string; text?: string }[] }>(`/maps/search?q=${encodeURIComponent(q)}&session=${session}`),
+  place: (id: string, session: string) => raw<{ place: PlacePick }>(`/maps/place/${encodeURIComponent(id)}?session=${session}`),
+};
+export const comms = {
+  call: (visitId: string) => post<{ message: string }>(`/calls/visit/${visitId}`),
+  inbox: () => raw<{ notifications: Note[] }>('/notifications'),
+  unread: () => raw<{ unread: number }>('/inbox/unread-count'),
+  readAll: () => post('/inbox/read', {}),
+  prefs: () => raw<{ preferences: { push: boolean; sms: boolean; whatsapp: boolean; language: string }; note: string }>('/inbox/preferences'),
+  savePrefs: (p: { push: boolean; sms: boolean; whatsapp: boolean; language: string }) => raw('/inbox/preferences', { method: 'PUT', body: JSON.stringify(p) }),
 };
 export const fileUrl = (id: string) => `/api/v1/files/${id}/content`;

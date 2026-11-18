@@ -18,6 +18,7 @@ import { controlRouter, personalBlocksRouter } from './routes/control.js';
 import { adminGrievanceRouter, grievanceRouter, publicRouter } from './routes/grievance.js';
 import { adminCmsRouter, publicCmsRouter, seoRouter } from './routes/cms.js';
 import { adminCalendarRouter, calendarRouter, publicCalendarRouter, videoRouter, webhookRouter } from './routes/calendar.js';
+import { adminMessagingRouter, callsRouter, callWebhookRouter, devicesRouter, inboxRouter, mapsRouter } from './routes/messaging.js';
 
 export function createApp() {
   const app = express();
@@ -26,7 +27,7 @@ export function createApp() {
   // Files are served to other origins (website, apps), so allow cross-origin reads of resources.
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cors({ origin: config.corsOrigins }));
-  app.use('/api/v1/webhooks', webhookRouter); // before the JSON parser: signatures need the raw body
+  app.use('/api/v1/webhooks', webhookRouter, callWebhookRouter); // before the JSON parser: signatures need the raw body
   app.use(express.json({ limit: '100kb' }));
 
   app.use('/api/v1/status', cors({ origin: '*' }), statusRouter); // public for any app or monitor
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/api/v1/admin/control', controlRouter);
   app.use('/api/v1/admin/cms', adminCmsRouter);
   app.use('/api/v1/admin/calendar', adminCalendarRouter);
+  app.use('/api/v1/admin/messages', adminMessagingRouter);
   app.use('/api/v1/admin/grievances', adminGrievanceRouter);
   app.use('/api/v1/admin', adminRouter);
   app.use('/api/v1/therapist/wallet', walletRouter);
@@ -57,6 +59,10 @@ export function createApp() {
   app.use('/api/v1/grievances', grievanceRouter);
   app.use('/api/v1/calendar', publicCalendarRouter, calendarRouter);
   app.use('/api/v1/video', videoRouter);
+  app.use('/api/v1/devices', devicesRouter);
+  app.use('/api/v1/inbox', inboxRouter);
+  app.use('/api/v1/maps', mapsRouter);
+  app.use('/api/v1/calls', callsRouter);
   app.use('/api/v1/blocks', personalBlocksRouter);
   app.use('/api/v1/partner', partnerRouter);
   app.use('/r', linkRouter); // QR scans and shared links

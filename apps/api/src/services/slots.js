@@ -2,6 +2,7 @@
 import { sequelize } from '../db/index.js';
 import { addDays, addMin, fromIst, hhmmToMin, istDate, istWeekday } from '../lib/time.js';
 import { distanceKm, travelMinutes } from '../lib/geo.js';
+import { travelMinutesMany } from './maps.js';
 import { schedulingRules, zoneRules } from './rules.js';
 import { config } from '../config/index.js';
 
@@ -40,9 +41,12 @@ export async function freeSlots({ therapistId, mode, fromDate, days = 7, address
   const [[{ home_lat: hLat, home_lng: hLng } = {}]] = await sequelize.query(`SELECT home_lat, home_lng FROM therapist_profiles WHERE user_id = :t`, { replacements: { t: therapistId } });
 
   // Minutes of travel needed between a busy block and the new visit (home visits only).
+  // Real drive times come from Google Maps when it is switched on (one batched, cached lookup); otherwise an estimate.
+  const homeBlocks = mode === 'home' && address ? busy.filter(b => b.mode === 'home' && b.lat != null) : [];
+  const drive = new Map((await travelMinutesMany(homeBlocks.map(b => ({ lat: b.lat, lng: b.lng })), address)).map((m, i) => [homeBlocks[i], m]));
   const gap = b => {
     if (mode !== 'home' || b.mode !== 'home' || b.lat == null) return mode === 'home' && b.mode === 'home' ? buffer : 0;
-    return travelMinutes(distanceKm(b.lat, b.lng, address.lat, address.lng)) + buffer;
+    return (drive.get(b) ?? travelMinutes(distanceKm(b.lat, b.lng, address.lat, address.lng))) + buffer;
   };
 
   const out = [];

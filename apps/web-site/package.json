@@ -1,6 +1,6 @@
 {
   "name": "@physioconnect/web-site",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@physioconnect/shared": "0.8.0",
-    "@physioconnect/tokens": "0.8.0",
+    "@physioconnect/shared": "0.9.0",
+    "@physioconnect/tokens": "0.9.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-router-dom": "^6.28.0"

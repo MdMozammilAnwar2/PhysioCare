@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api, cms, isSignedIn, type Site } from './api';
+import { api, cms, comms, isSignedIn, type Site } from './api';
 import { Logo } from './Logo';
 
 const ZONE = { green: ['bg-success/15 text-success-ink', 'Live'], blue: ['bg-sky-100 text-sky-700', 'Launching'], yellow: ['bg-yellow-100 text-yellow-800', 'Limited supply'], orange: ['bg-orange-100 text-orange-700', 'Restricted'], red: ['bg-danger/15 text-danger-ink', 'Blocked'] } as const;
@@ -50,9 +50,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const [site, setSite] = useState<Site | null>(null);
   const [down, setDown] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [unread, setUnread] = useState(0);
   const navigate = useNavigate();
   const loc = useLocation();
-  useEffect(() => setMenu(false), [loc.pathname]);
+  useEffect(() => { setMenu(false); if (isSignedIn()) comms.unread().then(r => setUnread(r.unread)).catch(() => undefined); }, [loc.pathname]);
   useEffect(() => {
     cms.site().then(r => setSite(r.site)).catch(() => undefined);
     const check = () => api.status().then(s => { setStatus(s); setDown(false); }).catch(() => setDown(true));
@@ -76,6 +77,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className="flex-1" />
           {isSignedIn() ? (
             <>
+              <Link to="/notifications" aria-label={`Notifications${unread ? `, ${unread} new` : ''}`} className="relative text-xl leading-none">🔔{unread > 0 && <span className="absolute -top-1.5 -right-2 min-w-5 h-5 px-1 rounded-full bg-danger text-white text-[11px] font-bold flex items-center justify-center">{unread > 9 ? '9+' : unread}</span>}</Link>
               <Link to="/bookings" className="hidden md:inline">My bookings</Link>
               <Link to="/rewards" className="hidden md:inline">Refer &amp; coins</Link>
               <button onClick={() => api.signOut().then(() => navigate('/'))} className="hidden md:inline text-sub">Sign out</button>

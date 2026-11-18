@@ -3,7 +3,7 @@
     "name": "PhysioCare Partner",
     "slug": "physioconnect-therapist",
     "scheme": "physioconnect-partner",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -26,7 +26,15 @@
           "backgroundColor": "#1F1A4D"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#5146D9",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

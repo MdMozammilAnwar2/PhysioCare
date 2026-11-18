@@ -5,6 +5,7 @@ import { api, ApiError, hasSession, type Status, type User } from './api';
 import { Logo } from './Logo';
 import { CmsPageEditor, CmsPages, SiteSettingsPage } from './cms-editor';
 import { CalendarPage } from './calendar-page';
+import { MessagesPage } from './messages-page';
 import { Header, Live, Payments, TherapistReview, VerificationQueue } from './pages';
 import { Incidents, MoneyRulesPage, Payouts, Refunds, Tds } from './money-pages';
 import { GrowthReport, GrowthRulesPage, PartnerDetail, Partners } from './growth-pages';
@@ -64,6 +65,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (u: User) => void }) {
 const NAV: [string, string, string[]][] = [
   ['/dashboard', 'Dashboard', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'content_editor', 'super_admin']],
   ['/calendar', 'Calendar', ['ops_admin', 'super_admin', 'city_coordinator', 'finance']],
+  ['/messages', 'Messages', ['ops_admin', 'super_admin']],
   ['/live', 'Live visits & SOS', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/verification', 'Verification', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/payments', 'Payments to confirm', ['ops_admin', 'finance', 'super_admin']],
@@ -105,6 +107,7 @@ function Console({ user, status, onSignOut }: { user: User; status: Status | nul
           <Route path="/website/pages" element={<CmsPages />} />
           <Route path="/website/pages/:id" element={<CmsPageEditor />} />
           <Route path="/website/settings" element={<SiteSettingsPage />} />
+          <Route path="/messages" element={<MessagesPage isSuper={user.roles.includes('super_admin')} />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/dashboard" element={<Dashboard roles={user.roles} />} />
           <Route path="/users" element={<Users />} />

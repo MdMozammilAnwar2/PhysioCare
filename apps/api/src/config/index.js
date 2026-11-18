@@ -91,6 +91,52 @@ export const config = {
     red: hours('ZONE_HOURS_RED', 'closed'),
   },
 
+  // ---------- messages: SMS, WhatsApp, push ----------
+  messaging: {
+    // SMS for notifications (not OTP): console (development log) | msg91 (needs DLT templates) | none
+    smsProvider: isTest ? 'memory' : str('NOTIFY_SMS_PROVIDER', 'console'),
+    msg91SenderId: str('MSG91_SENDER_ID', 'PHYCRE'),
+    // MSG91 Flow template id per message type, e.g. MSG91_FLOW_BOOKING_CONFIRMED=65f... (DLT-approved). Missing = not sent by SMS.
+    msg91Flows: Object.fromEntries(Object.entries(env).filter(([k]) => k.startsWith('MSG91_FLOW_')).map(([k, v]) => [k.slice(11).toLowerCase(), v])),
+    // WhatsApp through MSG91: console | msg91 | none. Templates must be approved by Meta first.
+    whatsappProvider: isTest ? 'memory' : str('WHATSAPP_PROVIDER', 'console'),
+    whatsappNumber: str('MSG91_WHATSAPP_NUMBER', ''), // your WhatsApp Business number, e.g. 919876543210
+    whatsappNamespace: str('MSG91_WHATSAPP_NAMESPACE', ''),
+    whatsappLanguage: str('WHATSAPP_TEMPLATE_LANGUAGE', 'en'),
+    // Push notifications through Expo (works for Android and iOS builds): expo | console | none
+    pushProvider: isTest ? 'memory' : str('PUSH_PROVIDER', 'console'),
+    expoAccessToken: str('EXPO_ACCESS_TOKEN', ''), // optional: Expo "enhanced push security" token
+    dispatchEverySeconds: num('NOTIFY_DISPATCH_SECONDS', 15),
+    maxAttempts: num('NOTIFY_MAX_ATTEMPTS', 5),
+    // Quiet hours (IST): no SMS/WhatsApp then, except safety and sign-in messages. Push is always sent.
+    quietHours: hours('NOTIFY_QUIET_HOURS', '21:30-07:30'),
+  },
+
+  // ---------- maps ----------
+  maps: {
+    provider: str('MAPS_PROVIDER', 'none'), // google | none (none = straight-line estimate, address typed by hand)
+    googleKey: str('GOOGLE_MAPS_API_KEY', ''), // server key: Places API (New), Geocoding API, Distance Matrix API
+    region: str('MAPS_REGION', 'in'),
+    biasLat: num('MAPS_BIAS_LAT', 25.5941), // Patna
+    biasLng: num('MAPS_BIAS_LNG', 85.1376),
+    biasRadiusM: num('MAPS_BIAS_RADIUS_M', 30000),
+    travelCacheDays: num('MAPS_TRAVEL_CACHE_DAYS', 14),
+  },
+
+  // ---------- masked calling (patient ↔ physio without sharing numbers) ----------
+  calls: {
+    provider: str('CALL_PROVIDER', 'console'), // exotel | console | none
+    exotelSid: str('EXOTEL_SID', ''),
+    exotelApiKey: str('EXOTEL_API_KEY', ''),
+    exotelApiToken: str('EXOTEL_API_TOKEN', ''),
+    exotelSubdomain: str('EXOTEL_SUBDOMAIN', 'api.exotel.com'), // api.in.exotel.com for the Mumbai cluster
+    exotelCallerId: str('EXOTEL_CALLER_ID', ''), // your ExoPhone (virtual number) shown to both sides
+    windowBeforeHours: num('CALL_WINDOW_BEFORE_HOURS', 24),
+    windowAfterHours: num('CALL_WINDOW_AFTER_HOURS', 2),
+    maxPerVisit: num('CALL_MAX_PER_VISIT', 10),
+    supportNumber: str('SUPPORT_PHONE', ''), // shown when a call can't be connected
+  },
+
   // ---------- calendars ----------
   calendar: {
     // Google Calendar (OAuth). Create credentials at console.cloud.google.com → APIs & Services → Credentials

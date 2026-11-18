@@ -6,6 +6,7 @@ import { istDate } from '../lib/time.js';
 import { audit } from './audit.js';
 import { accrueForPlan } from './money.js';
 import { returnCoinsForPlan } from './growth.js';
+import { alertSafetyTeam } from './notify.js';
 
 const one = async (sql, replacements, transaction) => (await sequelize.query(sql, { replacements, transaction }))[0][0];
 const notify = (userId, type, title, body, data, transaction) => sequelize.query(
@@ -160,6 +161,8 @@ export async function raiseSos({ userId, visitId, lat, lng, ip }) {
   const sos = await one(`INSERT INTO sos_events (visit_id, raised_by, lat, lng) VALUES (:v, :u, :lat, :lng) RETURNING id, created_at`, { v: visitId ?? null, u: userId, lat: lat ?? null, lng: lng ?? null });
   if (visitId && lat != null) await sequelize.query(`INSERT INTO visit_locations (visit_id, lat, lng) VALUES (:v, :lat, :lng)`, { replacements: { v: visitId, lat, lng } });
   await audit({ actor: { id: userId, primaryRole: 'therapist' }, action: 'sos.raised', targetType: 'sos', targetId: sos.id, after: { visitId, lat, lng }, ip });
+  const [[who]] = await sequelize.query(`SELECT name, phone FROM users WHERE id = :u`, { replacements: { u: userId } });
+  await alertSafetyTeam({ id: sos.id, visitId, text: `${who?.name ?? 'A physio'} (${who?.phone ?? ''}) needs help${lat != null ? ` at https://maps.google.com/?q=${lat},${lng}` : ''}. Open the console › Live visits.` });
   return { sosId: sos.id, status: 'open', message: 'Our safety team has been alerted and will call you now.' };
 }
 

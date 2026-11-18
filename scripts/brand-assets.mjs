@@ -30,6 +30,7 @@ for (const app of ['web-site', 'web-admin']) {
 const apps = {
   'mobile-patient': { bg: C.indigo, variant: 'reversed', splash: 'full' },   // splash on white
   'mobile-therapist': { bg: C.ink, variant: 'dark', splash: 'dark' },        // splash on ink
+  'mobile-admin': { bg: C.white, variant: 'full', splash: 'full' },          // staff app: white tile, full-colour mark
 };
 for (const [app, { bg, variant, splash }] of Object.entries(apps)) {
   const a = `apps/${app}/assets`;
@@ -42,6 +43,8 @@ for (const [app, { bg, variant, splash }] of Object.entries(apps)) {
   out(`${a}/splash-icon.png`, png(iconSvg({ size: 1024, variant: splash, shape: 'none', scale: 0.7 }), 1024));
   // In-app logo marks (the apps have no SVG renderer): full colour, reversed (on indigo), dark (on ink).
   for (const v of ['full', 'reversed', 'dark']) out(`${a}/mark-${v}.png`, png(iconSvg({ size: 192, variant: v, shape: 'none', scale: 0.96 }), 192));
+  // Android status-bar notification icon: white on transparent (Android tints it).
+  out(`${a}/notification-icon.png`, png(iconSvg({ size: 96, variant: 'monoWhite', shape: 'none', scale: 0.84, thick: true }), 96));
   out(`${a}/favicon.png`, png(iconSvg({ size: 48, bg, variant, shape: 'rounded', scale: 0.66, thick: true }), 48));
 }
 console.log('Brand assets generated.');

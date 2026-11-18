@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { api, ApiError, calendar, growth, isSignedIn, rupees, type Booking, type Match, type Package, type Payment, type Zone } from './api';
+import { api, ApiError, calendar, comms, growth, isSignedIn, maps, rupees, type PlacePick, type Booking, type Match, type Package, type Payment, type Zone } from './api';
 import { captureAttribution, draft, pendingAttribution } from './booking-state';
 import { Button, Card, Chips, ErrorText, Field, Page, ZonePill } from './ui';
+import { AddressSearch } from './address-search';
 
 const msg = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
 const IST = 'Asia/Kolkata';
@@ -125,7 +126,9 @@ export function Where() {
   const [landmark, setLandmark] = useState('');
   const [result, setResult] = useState<{ id: string; zone: Zone & { outsideService?: boolean } } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { api.zones().then(r => setZones(r.zones)).catch(() => undefined); }, []);
+  const [search, setSearch] = useState(false);
+  const [picked, setPicked] = useState<PlacePick | null>(null);
+  useEffect(() => { api.zones().then(r => setZones(r.zones)).catch(() => undefined); maps.config().then(c => setSearch(c.search)).catch(() => undefined); }, []);
 
   async function useLocation_() {
     navigator.geolocation?.getCurrentPosition(p => save(p.coords.latitude, p.coords.longitude), () => setError('Couldn’t get your location. Pick your area instead.'));
@@ -133,9 +136,10 @@ export function Where() {
   async function save(lat?: number, lng?: number) {
     setError(null);
     const z = zones.find(z => z.id === area);
-    if (lat === undefined && !z) return setError('Pick your area.');
+    if (lat === undefined && picked) { lat = picked.lat; lng = picked.lng; }
+    if (lat === undefined && !z) return setError(search ? 'Search your address or pick your area.' : 'Pick your area.');
     if (line1.trim().length < 5) return setError('Enter your house and street.');
-    try { setResult(await api.addAddress({ line1, landmark: landmark || undefined, lat: lat ?? z!.lat!, lng: lng ?? z!.lng! })); } catch (e) { setError(msg(e)); }
+    try { setResult(await api.addAddress({ line1, landmark: landmark || undefined, lat: lat ?? z!.lat!, lng: lng ?? z!.lng!, placeId: picked?.placeId, formatted: picked?.formatted })); } catch (e) { setError(msg(e)); }
   }
   function next() {
     draft.set({ mode, addressId: mode === 'home' ? result?.id : undefined, zone: result?.zone ? { name: result.zone.name, color: result.zone.color } : undefined });
@@ -148,12 +152,14 @@ export function Where() {
         <Chips options={[['home', 'At home'], ['video', 'Video session']]} value={mode} onChange={setMode} />
         {mode === 'home' && !result && (
           <>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold text-sub">Area in Patna
+            {search && <AddressSearch onPick={pl => { setPicked(pl); setArea(''); if (!line1) setLine1(pl.formatted.split(',').slice(0, 2).join(',').slice(0, 200)); }} />}
+            {picked && <p className="text-sm text-success-ink font-semibold">📍 {picked.formatted}</p>}
+            {!picked && <label className="flex flex-col gap-1.5 text-sm font-semibold text-sub">{search ? 'Or pick your area' : 'Area in Patna'}
               <select value={area} onChange={e => setArea(e.target.value)} className="h-12 rounded-xl border border-line bg-white px-4 text-base text-ink">
                 <option value="">Choose your area</option>
                 {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
               </select>
-            </label>
+            </label>}
             <Field label="House, street" value={line1} onChange={e => setLine1(e.target.value)} placeholder="House 12, Road 4" />
             <Field label="Landmark (optional)" value={landmark} onChange={e => setLandmark(e.target.value)} />
             <div className="flex flex-wrap gap-3"><Button onClick={() => save()}>Save address</Button><Button variant="ghost" onClick={useLocation_}>Use my location</Button></div>
@@ -399,10 +405,12 @@ export function Bookings() {
   const [rows, setRows] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feed, setFeed] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   useEffect(() => { api.bookings().then(r => setRows(r.bookings)).catch(e => setError(msg(e))); calendar.me().then(r => setFeed(r.feedUrl)).catch(() => undefined); }, []);
   const joinVideo = async (id: string) => { setError(null); try { const r = await calendar.video(id); window.open(r.url, '_blank', 'noopener'); } catch (e) { setError(msg(e)); } };
   return (
     <Page title="My bookings">
+      {info && <p className="rounded-xl bg-success/10 px-4 py-3 font-semibold">{info}</p>}
       <ErrorText error={error} />
       {rows?.length === 0 && <Card><p className="font-bold">No visits yet</p><Link to="/book" className="text-brand font-bold">Book your first visit ›</Link></Card>}
       {rows?.map(b => (
@@ -419,6 +427,7 @@ export function Bookings() {
           <div className="flex gap-4 flex-wrap text-sm font-bold">
             {b.mode === 'video' && ['booked', 'checked_in'].includes(b.status) && <button onClick={() => joinVideo(b.id)} className="text-white bg-brand rounded-lg px-3 py-1.5">Join video call</button>}
             {['booked', 'on_the_way', 'checked_in'].includes(b.status) && <button onClick={() => calendar.addToCalendar(b.id).catch(e => setError(msg(e)))} className="text-brand">Add to calendar</button>}
+            {['booked', 'on_the_way', 'checked_in'].includes(b.status) && <button onClick={() => comms.call(b.id).then(r => setInfo(r.message)).catch(e => setError(msg(e)))} className="text-brand">📞 Call physio</button>}
             {b.plan_id && <Link to={`/chat/${b.plan_id}`} className="text-brand">Message physio</Link>}
             {b.status === 'completed' && !b.rated && <Link to={`/visits/${b.id}/rate`} className="text-brand">Rate this visit</Link>}
             {['completed', 'in_progress', 'booked', 'no_show'].includes(b.status) && <Link to={`/visits/${b.id}/report`} className="text-sub underline">Report a problem</Link>}

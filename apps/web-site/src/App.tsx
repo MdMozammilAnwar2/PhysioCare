@@ -5,6 +5,7 @@ import { Chat, Plans, RateVisit, ReportProblem } from './trust-pages';
 import { PartnerPortal, Rewards } from './growth-pages';
 import { GrievancePage, GrievanceThread } from './grievance-pages';
 import { CmsRoute, PhysioDirectory, PhysioProfile, Preview } from './cms-pages';
+import { NotificationsPage } from './notifications-page';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/partner" element={<PartnerPortal />} />
           <Route path="/grievance" element={<GrievancePage />} />
           <Route path="/grievance/:id" element={<RequireAuth><GrievanceThread /></RequireAuth>} />
+          <Route path="/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
           <Route path="/physios" element={<PhysioDirectory />} />
           <Route path="/physios/:id" element={<PhysioProfile />} />
           <Route path="/preview" element={<Preview />} />

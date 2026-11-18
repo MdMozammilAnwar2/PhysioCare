@@ -5,7 +5,8 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold, useFonts } from '@expo-google-fonts/plus-jakarta-sans';
-import { api, type Status } from '../lib/api';
+import { api, tokens, type Status } from '../lib/api';
+import { registerForPush } from '../lib/push';
 import { F, Button, C, s } from '../lib/ui';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
@@ -18,6 +19,8 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined);
 export default function RootLayout() {
   const [fontsReady, fontError] = useFonts({ PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold });
   useEffect(() => { if (fontsReady || fontError) SplashScreen.hideAsync().catch(() => undefined); }, [fontsReady, fontError]);
+  // Already signed in? Make sure this phone gets notifications.
+  useEffect(() => { tokens.load().then(ok => { if (ok) registerForPush().catch(() => undefined); }); }, []);
   const [status, setStatus] = useState<Status | null>(null);
   const [down, setDown] = useState(false);
   useEffect(() => {

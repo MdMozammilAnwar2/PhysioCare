@@ -59,7 +59,8 @@ export default function VisitScreen() {
         {v.line1 ? <Text style={s.body}>{v.line1}{v.landmark ? ` · ${v.landmark}` : ''}</Text> : null}
         {v.zone_color ? <ZonePill color={v.zone_color} name={v.zone_name} /> : null}
         {needsFamily && v.family_member ? <Text style={{ color: C.amber, fontFamily: F.w600 }}>Required: {v.family_member.relation} ({v.family_member.name}) must be at home.</Text> : null}
-        {v.lat != null && <Button title="Directions" variant="ghost" onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}`)} />}
+        {['booked', 'on_the_way', 'checked_in'].includes(status) && v.physio_consent !== 'pending' && <Button title="📞 Call patient" variant="ghost" busy={busy} onPress={() => act(async () => { const r = await api.callForVisit(id); Alert.alert('Calling', r.message); })} />}
+      {v.lat != null && <Button title="Directions" variant="ghost" onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}`)} />}
       </Card>
 
       {isVideo && (status === 'booked' || status === 'checked_in') && (

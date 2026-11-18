@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Linking, Share, Text, View } from 'react-native';
+import { Alert, Linking, Share, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { api, ApiError, fmtDay, fmtTime, tokens } from '../lib/api';
 import { F, Button, C, Card, ErrorText, Screen, s } from '../lib/ui';
@@ -35,6 +35,7 @@ export default function Bookings() {
           )}
           {b.mode === 'video' && ['booked', 'checked_in'].includes(b.status) && <Button title="Join video call" onPress={() => api.video(b.id).then(r => Linking.openURL(r.url)).catch(e => setError(e instanceof ApiError ? e.message : 'Couldn’t open the call.'))} />}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+            {['booked', 'on_the_way', 'checked_in'].includes(b.status) && <Text accessibilityRole="button" onPress={() => api.callForVisit(b.id).then(r => Alert.alert('Calling', r.message)).catch(e => setError(e instanceof ApiError ? e.message : 'Couldn’t call.'))} style={{ color: C.brand, fontFamily: F.w700, paddingVertical: 8 }}>📞 Call physio</Text>}
             {b.plan_id && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/[planId]', params: { planId: b.plan_id! } })} style={{ color: C.brand, fontFamily: F.w700, paddingVertical: 8 }}>Message</Text>}
             {b.status === 'completed' && !b.rated && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/rate/[id]', params: { id: b.id } })} style={{ color: C.brand, fontFamily: F.w700, paddingVertical: 8 }}>Rate visit</Text>}
             {['completed', 'in_progress', 'booked', 'no_show'].includes(b.status) && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/report/[id]', params: { id: b.id } })} style={{ color: C.sub, fontFamily: F.w700, paddingVertical: 8, textDecorationLine: 'underline' }}>Report a problem</Text>}
@@ -42,6 +43,7 @@ export default function Bookings() {
         </Card>
       ))}
       <Button title="My plans and refunds" variant="ghost" onPress={() => router.push('/plans')} />
+      <Button title="Notifications" variant="ghost" onPress={() => router.push('/notifications')} />
       <Button title="Refer & coins" variant="ghost" onPress={() => router.push('/rewards')} />
       <Button title="Show my visits in my phone’s calendar" variant="ghost" onPress={() => api.calendar().then(r => Linking.openURL(r.feedUrl.replace(/^https?:/, 'webcal:')).catch(() => Share.share({ message: r.feedUrl }))).catch(() => setError('Couldn’t get your calendar link.'))} />
       <Button title="Complaints & Grievance Officer" variant="ghost" onPress={() => router.push('/grievance')} />

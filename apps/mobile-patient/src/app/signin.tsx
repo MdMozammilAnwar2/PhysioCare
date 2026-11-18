@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../lib/api';
 import { Button, Card, ErrorText, Field, Screen, s } from '../lib/ui';
+import { registerForPush } from '../lib/push';
 
 export default function SignIn() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function SignIn() {
     try {
       if (step === 'phone') { const r = await api.sendOtp(phone); if (r.devCode) setCode(r.devCode); setStep('code'); return; }
       const r = await api.verifyOtp(phone, code, ref.trim() || undefined);
+      registerForPush().catch(() => undefined);
       router.replace(r.isNew || !r.user.name ? '/about' : '/bookings');
     } catch (e) { setError(e instanceof ApiError ? e.message : 'Something went wrong.'); } finally { setBusy(false); }
   }

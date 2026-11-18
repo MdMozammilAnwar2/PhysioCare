@@ -5,6 +5,41 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [0.9.0] — Phase 8 · Reaching people: push, SMS, WhatsApp, maps, masked calls, admin app
+
+Each service switches on with its key in `apps/api/.env`; until then it runs in development mode
+(messages and calls are printed in the API terminal; maps falls back to the drive-time estimate).
+
+### Added (API)
+- **Notification delivery**: every in-app notification is delivered by push; important ones (bookings, physio on the
+  way, payments, refunds, reminders, grievances, SOS…) also by SMS, and confirmations and reminders by WhatsApp.
+  Runs every `NOTIFY_DISPATCH_SECONDS`, retries failures with backoff up to `NOTIFY_MAX_ATTEMPTS`, logs every attempt.
+  - Push: Expo push service (`PUSH_PROVIDER=expo`); dead device tokens are switched off automatically.
+  - SMS: MSG91 Flow with one DLT template per message type (`MSG91_FLOW_<TYPE>`).
+  - WhatsApp: MSG91 WhatsApp with Meta-approved templates named after the message type.
+  - People can turn SMS and WhatsApp off; safety alerts and sign-in codes are always sent.
+  - Quiet hours (`NOTIFY_QUIET_HOURS`, default 21:30–07:30 IST) hold SMS/WhatsApp until morning, except urgent ones.
+- **Visit reminders** to patient and physio two hours before every visit.
+- **SOS alerts** now reach every ops admin and super admin by push and SMS. (Fixed: raising an SOS failed while
+  alerting staff.)
+- **Google Maps** (`MAPS_PROVIDER=google`): address search (Places, biased to Patna), exact location saved with the
+  address, and real drive times between visits in the slot engine (Distance Matrix, batched and cached ~100 m /
+  `MAPS_TRAVEL_CACHE_DAYS`). Any maps error falls back to the estimate, so booking never fails because of maps.
+- **Masked calling** (`CALL_PROVIDER=exotel`): patient and physio call each other through your ExoPhone; neither sees
+  the other's number. Open from `CALL_WINDOW_BEFORE_HOURS` before to `CALL_WINDOW_AFTER_HOURS` after the visit, at most
+  `CALL_MAX_PER_VISIT` calls; call results are logged from Exotel's status callback.
+- Devices (`/devices`), inbox unread count and mark-read, message preferences, delivery log and a super-admin test message.
+
+### Added (apps)
+- **PhysioCare Admin** (`apps/mobile-admin`, new): staff sign-in, home with SOS banner and queues for your role,
+  live visits with SOS acknowledge / call / open location / resolve (refreshes every 15 s), and quick approvals of
+  payments, partners and refunds. White icon with the full-colour mark. `npm run admin-app:dev`.
+- **Patient and physio apps**: push notifications (registered after sign-in; needs a development or store build),
+  Notifications screen with SMS/WhatsApp choices, "Call physio" / "Call patient", address search in the patient app.
+- **Website**: address search, notification bell with unread count, Notifications page with message choices,
+  "Call physio" on bookings.
+- **Console**: Messages (which services are on, 7-day delivery counts, delivery log, send a test).
+
 ## [0.8.0] — Phase 7 · Calendars and video visits
 
 ### Added (API)

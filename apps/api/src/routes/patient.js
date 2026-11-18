@@ -44,15 +44,17 @@ patientRouter.post('/addresses', validate(z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   isDefault: z.boolean().default(false),
+  placeId: z.string().max(300).optional(),        // from address search (Google)
+  formatted: z.string().max(400).optional(),
 })), asyncHandler(async (req, res) => {
   const b = req.body;
   const zone = await zoneForPoint(b.lat, b.lng);
   const [[{ n }]] = await sequelize.query(`SELECT count(*)::int AS n FROM addresses WHERE user_id = :u`, { replacements: { u: req.user.id } });
   const isDefault = b.isDefault || n === 0;
   if (isDefault) await q(`UPDATE addresses SET is_default = false WHERE user_id = :u`, { u: req.user.id });
-  const [row] = await q(`INSERT INTO addresses (user_id, label, line1, landmark, pin_code, lat, lng, zone_id, is_default)
-    VALUES (:u, :label, :line1, :lm, :pin, :lat, :lng, :z, :d) RETURNING id`,
-  { u: req.user.id, label: b.label, line1: b.line1, lm: b.landmark ?? null, pin: b.pinCode ?? null, lat: b.lat, lng: b.lng, z: zone?.id ?? null, d: isDefault });
+  const [row] = await q(`INSERT INTO addresses (user_id, label, line1, landmark, pin_code, lat, lng, zone_id, is_default, place_id, formatted, location_source)
+    VALUES (:u, :label, :line1, :lm, :pin, :lat, :lng, :z, :d, :place, :fmt, :src) RETURNING id`,
+  { u: req.user.id, label: b.label, line1: b.line1, lm: b.landmark ?? null, pin: b.pinCode ?? null, lat: b.lat, lng: b.lng, z: zone?.id ?? null, d: isDefault, place: b.placeId ?? null, fmt: b.formatted ?? null, src: b.placeId ? 'search' : 'pin' });
   // The zone decides visit rules, so the app shows it straight away.
   res.status(201).json({ id: row.id, zone: zone ?? { name: null, color: 'red', outsideService: true } });
 }));

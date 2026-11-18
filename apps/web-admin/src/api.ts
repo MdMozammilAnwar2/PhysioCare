@@ -195,3 +195,15 @@ export const publicFileUrl = (id: string) => `/api/v1/files/${id}/content`;
 export type CalVisit = { id: string; mode: string; status: string; starts_at: string; ends_at: string; therapist_id: string; therapist_name: string; patient_first: string | null; zone_name: string | null; zone_color: string | null; physio_consent: string | null };
 export type CalWeek = { from: string; days: number; visits: CalVisit[]; busy: { therapist_id: string; starts_at: string; ends_at: string; provider: string }[]; leave: { therapist_id: string; starts_at: string; ends_at: string; reason: string | null }[] };
 export const calendarApi = { week: (from: string, days = 7) => call<CalWeek>(`/admin/calendar?from=${from}&days=${days}`) };
+
+// ---------- Phase 8: messages ----------
+export type MessagesData = {
+  deliveries: { id: number; channel: string; status: string; attempts: number; provider: string; error: string | null; sent_at: string | null; created_at: string; next_attempt_at: string; type: string; title: string; name: string | null; phone: string }[];
+  summary: { channel: string; status: string; n: number }[];
+  calls: { status: string; n: number }[];
+  providers: { push: string; sms: string; whatsapp: string; calls: string; maps: string };
+};
+export const messagesApi = {
+  list: (status = '', channel = '') => call<MessagesData>(`/admin/messages?status=${status}&channel=${channel}`),
+  test: () => post<{ message: string }>('/admin/messages/test', {}),
+};
