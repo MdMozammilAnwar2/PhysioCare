@@ -3,6 +3,7 @@
 import { sequelize, User, UserRole } from '../src/models/index.js';
 import { normalizeIndianPhone } from '../src/lib/util.js';
 import { audit } from '../src/services/audit.js';
+import { config } from '../src/config/index.js';
 
 const CITIES = [['Patna', 'live'], ['Muzaffarpur', 'recruiting'], ['Hajipur', 'recruiting'], ['Samastipur', 'planned'], ['Darbhanga', 'planned'], ['Gaya', 'planned'], ['Bhagalpur', 'planned'], ['Seemanchal', 'planned']];
 // [name, colour, approx centre lat, lng, radius km] — placeholders until zones are drawn in the console.
@@ -25,6 +26,19 @@ try {
     { replacements: { name, color, lat, lng, r } });
   }
   console.log(`Seeded ${CITIES.length} cities and ${PATNA_ZONES.length} Patna zones.`);
+
+  // Console-editable settings start from .env. SETTINGS_FROM_ENV=overwrite replaces what is in the database.
+  const overwrite = config.settingsFromEnv === 'overwrite';
+  for (const key of ['money_rules', 'growth_rules', 'maintenance', 'min_app_version']) {
+    const [rows] = await sequelize.query(`INSERT INTO app_settings (key, value) VALUES (:k, :v)
+      ON CONFLICT (key) DO ${overwrite ? 'UPDATE SET value = EXCLUDED.value, updated_at = now()' : 'NOTHING'} RETURNING key`,
+    { replacements: { k: key, v: JSON.stringify(config.defaults[key]) } });
+    if (rows.length) console.log(`Setting ${key} ${overwrite ? 'set' : 'added'} from .env.`);
+  }
+  if (overwrite) {
+    await sequelize.query(`INSERT INTO scheduling_rules (rules) VALUES (:r)`, { replacements: { r: JSON.stringify(config.defaults.scheduling) } });
+    console.log('Scheduling rules set from .env (new version).');
+  }
 
   const upiId = (process.env.PAYMENT_UPI_ID || '').trim();
   if (/^[\w.-]{2,256}@[a-zA-Z]{2,64}$/.test(upiId)) {

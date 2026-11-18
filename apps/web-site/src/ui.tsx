@@ -49,7 +49,7 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const check = () => api.status().then(s => { setStatus(s); setDown(false); }).catch(() => setDown(true));
     check();
-    const t = setInterval(check, 60_000);
+    const t = setInterval(check, Number(import.meta.env.VITE_STATUS_CHECK_SECONDS || 60) * 1000);
     return () => clearInterval(t);
   }, []);
   return (
@@ -71,7 +71,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </nav>
       <main className="flex-1">{children}</main>
-      <footer className="max-w-6xl w-full mx-auto px-6 py-10 text-sm text-sub">PhysioConnect by Healthtropic · v{status?.version ?? '—'}</footer>
+      <footer className="max-w-6xl w-full mx-auto px-6 py-10 text-sm text-sub flex flex-wrap gap-x-6 gap-y-2"><span>PhysioConnect by Healthtropic · v{status?.version ?? '—'}</span><Link to="/grievance" className="font-semibold">Grievance officer &amp; complaints</Link><Link to="/partner" className="font-semibold">For doctors &amp; hospitals</Link></footer>
     </div>
   );
 }

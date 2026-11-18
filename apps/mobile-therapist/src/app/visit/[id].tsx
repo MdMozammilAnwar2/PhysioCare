@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { api, ApiError, fmtDay, fmtTime, rupees, visitsCache } from '../../lib/api';
 import { Button, C, Card, Check, ErrorText, Field, Screen, ZonePill, s } from '../../lib/ui';
 import { sendSos } from '../../lib/sos';
 
-const LOCATION_EVERY_MS = 60_000;
+const LOCATION_EVERY_MS = Number(process.env.EXPO_PUBLIC_LOCATION_EVERY_SECONDS || 60) * 1000;
 
 export default function VisitScreen() {
   const router = useRouter();
@@ -107,6 +107,16 @@ export default function VisitScreen() {
           </Pressable>
           <Text style={[s.muted, { textAlign: 'center' }]}>Hold 2 seconds. Alerts our 24×7 safety team with your location.</Text>
         </View>
+      )}
+      {v.patient_name && (
+        <Text accessibilityRole="button" style={{ color: C.red, fontWeight: '700', textAlign: 'center', paddingVertical: 12 }}
+          onPress={() => Alert.alert('Block this patient?', 'You won’t be matched with them again. Our team reviews every block. If you are in danger, use SOS or call 112.', [
+            { text: 'Cancel', style: 'cancel' },
+            ...([['unsafe_home', 'Unsafe home'], ['abuse', 'Abusive'], ['harassment', 'Harassment'], ['payment_default', 'Didn’t pay']] as const).map(([code, label]) => ({
+              text: label, style: 'destructive' as const,
+              onPress: () => api.blockPatient(v.patient_id, code).then(r => Alert.alert('Blocked', r.message)).catch(e => setError(e instanceof ApiError ? e.message : 'Couldn’t block.')),
+            })),
+          ])}>Block this patient</Text>
       )}
       <Button title="Back to schedule" variant="ghost" onPress={() => router.replace('/schedule')} />
     </Screen>

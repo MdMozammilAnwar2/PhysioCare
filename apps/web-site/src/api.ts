@@ -107,5 +107,16 @@ export const growth = {
   addLink: (label: string) => post<{ link: PartnerLink }>('/partner/links', { label }),
 };
 
+// ---------- Phase 5: grievances ----------
+export type Officer = { name: string; designation: string; email: string | null; phone: string | null; address: string; hours: string; ackHours: number; resolveDays: number };
+export type MyGrievance = { id: string; ticket_no: string; category: string; status: string; created_at: string; ack_due_at: string; resolve_due_at: string; resolved_at: string | null; resolution: string | null };
+export const grievance = {
+  officer: () => raw<{ officer: Officer; categories: string[] }>('/public/grievance-officer'),
+  mine: () => raw<{ grievances: MyGrievance[] }>('/grievances'),
+  get: (id: string) => raw<{ grievance: MyGrievance & { description: string }; events: { kind: string; body: string | null; created_at: string }[] }>(`/grievances/${id}`),
+  file: (b: { category: string; description: string; fileIds?: string[] }) => post<{ grievance: { id: string; ticket_no: string } }>('/grievances', b),
+  reply: (id: string, body: string) => post(`/grievances/${id}/reply`, { body }),
+};
+
 export const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 

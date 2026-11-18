@@ -14,6 +14,8 @@ import { zonesRouter } from './routes/public.js';
 import { filesRouter } from './routes/files.js';
 import { adminMoneyRouter, chatRouter, patientMoneyRouter, walletRouter } from './routes/money.js';
 import { adminGrowthRouter, growthRouter, linkRouter, partnerRouter } from './routes/growth.js';
+import { controlRouter, personalBlocksRouter } from './routes/control.js';
+import { adminGrievanceRouter, grievanceRouter, publicRouter } from './routes/grievance.js';
 
 export function createApp() {
   const app = express();
@@ -34,6 +36,8 @@ export function createApp() {
   app.use('/api/v1/admin/payments', adminPaymentsRouter);
   app.use('/api/v1/admin/money', adminMoneyRouter);
   app.use('/api/v1/admin/growth', adminGrowthRouter);
+  app.use('/api/v1/admin/control', controlRouter);
+  app.use('/api/v1/admin/grievances', adminGrievanceRouter);
   app.use('/api/v1/admin', adminRouter);
   app.use('/api/v1/therapist/wallet', walletRouter);
   app.use('/api/v1/therapist', therapistRouter);
@@ -43,6 +47,9 @@ export function createApp() {
   app.use('/api/v1/zones', zonesRouter);
   app.use('/api/v1/files', filesRouter);
   app.use('/api/v1/growth', growthRouter);
+  app.use('/api/v1/public', cors({ origin: '*' }), publicRouter);
+  app.use('/api/v1/grievances', grievanceRouter);
+  app.use('/api/v1/blocks', personalBlocksRouter);
   app.use('/api/v1/partner', partnerRouter);
   app.use('/r', linkRouter); // QR scans and shared links
 

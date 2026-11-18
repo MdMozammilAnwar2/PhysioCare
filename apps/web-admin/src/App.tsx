@@ -5,6 +5,7 @@ import { api, ApiError, hasSession, type Status, type User } from './api';
 import { Header, Live, Payments, TherapistReview, VerificationQueue } from './pages';
 import { Incidents, MoneyRulesPage, Payouts, Refunds, Tds } from './money-pages';
 import { GrowthReport, GrowthRulesPage, PartnerDetail, Partners } from './growth-pages';
+import { AuditLog, Blocks, Dashboard, GrievanceDetail, Grievances, PlatformSettings, Staff, UserDetail, Users, Zones } from './control-pages';
 
 // Checks the public status API on start and every 60 s, like every PhysioConnect app.
 function useStatus() {
@@ -14,7 +15,7 @@ function useStatus() {
     let alive = true;
     const check = () => api.status().then(s => { if (alive) { setStatus(s); setDown(false); } }).catch(() => alive && setDown(true));
     check();
-    const t = setInterval(check, 60_000);
+    const t = setInterval(check, Number(import.meta.env.VITE_STATUS_CHECK_SECONDS || 60) * 1000);
     return () => { alive = false; clearInterval(t); };
   }, []);
   return { status, down };
@@ -56,6 +57,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (u: User) => void }) {
 }
 
 const NAV: [string, string, string[]][] = [
+  ['/dashboard', 'Dashboard', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
   ['/live', 'Live visits & SOS', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/verification', 'Verification', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/payments', 'Payments to confirm', ['ops_admin', 'finance', 'super_admin']],
@@ -67,13 +69,20 @@ const NAV: [string, string, string[]][] = [
   ['/partners', 'Partners', ['ops_admin', 'city_coordinator', 'finance', 'super_admin']],
   ['/growth', 'Where patients come from', ['ops_admin', 'city_coordinator', 'finance', 'super_admin']],
   ['/growth-rules', 'Coins & rewards', ['ops_admin', 'finance', 'super_admin']],
+  ['/grievances', 'Grievances', ['grievance_committee', 'ops_admin', 'super_admin']],
+  ['/users', 'Users', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
+  ['/blocks', 'Blocked accounts', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
+  ['/zones', 'Zones', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
+  ['/staff', 'Staff & roles', ['super_admin']],
+  ['/settings', 'Platform settings', ['super_admin']],
+  ['/audit', 'Audit log', ['super_admin']],
 ];
 
 function Console({ user, status, onSignOut }: { user: User; status: Status | null; onSignOut: () => void }) {
   const nav = NAV.filter(([, , roles]) => user.roles.some(r => roles.includes(r)));
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 shrink-0 bg-navy text-white p-5 flex flex-col gap-1">
+      <aside className="w-64 shrink-0 bg-navy text-white p-5 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto">
         <span className="text-lg font-extrabold">PhysioConnect</span>
         <span className="text-xs text-white/60 mb-6">Console · {user.primaryRole.replace('_', ' ')}</span>
         {nav.map(([to, label]) => (
@@ -85,6 +94,16 @@ function Console({ user, status, onSignOut }: { user: User; status: Status | nul
       </aside>
       <main className="flex-1 min-w-0 p-8">
         <Routes>
+          <Route path="/dashboard" element={<Dashboard roles={user.roles} />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/users/:id" element={<UserDetail me={user.id} isSuper={user.roles.includes('super_admin')} />} />
+          <Route path="/blocks" element={<Blocks />} />
+          <Route path="/staff" element={<Staff />} />
+          <Route path="/zones" element={<Zones isSuper={user.roles.includes('super_admin')} />} />
+          <Route path="/grievances" element={<Grievances />} />
+          <Route path="/grievances/:id" element={<GrievanceDetail />} />
+          <Route path="/settings" element={<PlatformSettings isSuper={user.roles.includes('super_admin')} />} />
+          <Route path="/audit" element={<AuditLog />} />
           <Route path="/live" element={<Live />} />
           <Route path="/verification" element={<VerificationQueue />} />
           <Route path="/verification/:id" element={<TherapistReview />} />

@@ -138,7 +138,7 @@ export function Chat() {
       last.current = r.messages[r.messages.length - 1].id;
       setItems(x => [...x.filter(m => !r.messages.some(n => n.id === m.id)), ...r.messages]);
     }).catch(e => alive && setError(msg(e)));
-    poll(); const t = setInterval(poll, 5000);
+    poll(); const t = setInterval(poll, Number(import.meta.env.VITE_CHAT_REFRESH_SECONDS || 5) * 1000);
     return () => { alive = false; clearInterval(t); };
   }, [planId]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [items.length]);

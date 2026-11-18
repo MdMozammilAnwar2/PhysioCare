@@ -83,6 +83,10 @@ export const api = {
   // Image source for protected images (QR code): <Image source={api.imageSource(path)} />.
   imageSource: (path: string) => ({ uri: `${BASE.replace(/\/api\/v1$/, '')}${path}`, headers: access ? { Authorization: `Bearer ${access}` } : undefined }),
 
+  // Phase 5: grievances.
+  grievanceOfficer: () => call<{ officer: { name: string; designation: string; email: string | null; phone: string | null; address: string; hours: string; ackHours: number; resolveDays: number } }>('/public/grievance-officer'),
+  myGrievances: () => call<{ grievances: { id: string; ticket_no: string; status: string; resolution: string | null }[] }>('/grievances'),
+  fileGrievance: (b: { category: string; description: string }) => post<{ grievance: { id: string; ticket_no: string } }>('/grievances', b),
   // Phase 3: plans, refunds, problems, ratings, chat.
   plans: () => call<{ plans: { id: string; status: string; sessions_total: number; price_paise: number; valid_until: string | null; mode: string; therapist_name: string; payment_status: string | null; completed: number }[] }>('/patient/plans'),
   refunds: () => call<{ refunds: { id: string; plan_id: string; amount_paise: number; status: string; note: string | null }[] }>('/patient/refunds'),

@@ -16,7 +16,7 @@ export default function RootLayout() {
   useEffect(() => {
     const check = () => api.status().then(st => { setStatus(st); setDown(false); }).catch(() => setDown(true));
     check();
-    const t = setInterval(check, 60_000);
+    const t = setInterval(check, Number(process.env.EXPO_PUBLIC_STATUS_CHECK_SECONDS || 60) * 1000);
     return () => clearInterval(t);
   }, []);
 

@@ -11,7 +11,7 @@ const one = async (sql, replacements, transaction) => (await sequelize.query(sql
 const notify = (userId, type, title, body, data, transaction) => sequelize.query(
   `INSERT INTO notifications (user_id, type, title, body, data) VALUES (:u, :type, :title, :body, :data)`,
   { replacements: { u: userId, type, title, body, data: JSON.stringify(data ?? {}) }, transaction });
-const MAX_CHECKIN_ATTEMPTS = 5;
+const MAX_CHECKIN_ATTEMPTS = config.visit.checkinMaxAttempts;
 
 // The 4-digit check-in code is derived from a server secret and the visit id: nothing to store or leak.
 export const checkinCode = visitId => String(parseInt(hmac(config.otpSecret, `checkin:${visitId}`).slice(0, 8), 16) % 10000).padStart(4, '0');

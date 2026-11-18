@@ -3,8 +3,9 @@ import { sequelize } from '../db/index.js';
 import { addDays, addMin, fromIst, hhmmToMin, istDate, istWeekday } from '../lib/time.js';
 import { distanceKm, travelMinutes } from '../lib/geo.js';
 import { schedulingRules, zoneRules } from './rules.js';
+import { config } from '../config/index.js';
 
-const STEP_MIN = 15;
+const STEP_MIN = config.visit.slotStepMinutes;
 
 // Busy intervals for a physio between two instants: live visits (expired holds ignored), leave, external calendars.
 async function busyIntervals(therapistId, from, to) {

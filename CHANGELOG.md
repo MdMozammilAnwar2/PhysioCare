@@ -5,6 +5,46 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [0.6.0] — Phase 5 · Control: super admin, blocks, zones, grievances
+
+### Configuration
+- **Every constant now lives in `.env`** (see each app's `.env.example`). API: OTP and tokens, check-in tries,
+  slot step, drive time per km, zone hours per colour (`ZONE_HOURS_GREEN=07:00-20:00`, `closed`), coin rate,
+  partner QR limit, same-device sign-up limit, Grievance Officer details and time limits, and the starting values
+  of every console-editable setting (fees, TDS, holds, coins, rewards, scheduling, maintenance, app versions).
+  `npm run api:seed` writes missing settings from `.env`; `SETTINGS_FROM_ENV=overwrite` makes `.env` win.
+  Web apps: dev port, API address, status-check and chat refresh. Mobile apps: API address, status-check,
+  chat refresh, location interval. Tests always use the built-in defaults.
+
+### Added (API)
+- **Blocks**: ops/city coordinators block patients, physios and partners with a reason and optional number of days;
+  only a super admin can block staff; a super admin can't be blocked or block themselves. Blocking signs the person
+  out everywhere and stops a physio taking new bookings. Timed blocks end by themselves. Unblock needs a note.
+- **Personal blocks**: a physio can block a patient (and a patient a physio) they've had a booking with; they are never
+  matched again; staff see every personal block.
+- **Staff & roles** (super admin): give ops admin, finance, city coordinator or grievance committee by phone number;
+  remove a role (signs them out). Super admin can't be given or removed through the API.
+- **Zones**: add zones (centre + radius), change colour or area with a required reason, review date, full history.
+  Only a super admin can turn a zone Red.
+- **Platform settings** (super admin): maintenance mode with message, minimum app versions, scheduling rules
+  (saved as a new version).
+- **Audit log viewer** (super admin) with action filter.
+- **Dashboard**: today's visits, queues needing action (SOS, verification, payments, incidents, refunds, partners,
+  grievances and overdue ones, blocked), money (collected 7/30 days, outstanding, payouts, refunds, partner rewards
+  due), growth, and a 14-day trend.
+- **Grievance redressal**: public Grievance Officer details (`GET /api/v1/public/grievance-officer`, Dr Gunjan);
+  anyone signed in files a complaint and gets a ticket (`GRV-2026-00001`), acknowledged within 24 h and resolved within
+  15 days (from `.env`). Staff acknowledge, assign, add internal notes or replies, send to the committee, resolve or close.
+  Harassment and safety complaints are visible only to the new **grievance committee** role and the super admin.
+
+### Added (apps)
+- **Admin console**: Dashboard (new home), Users (search, filter, detail with block/unblock and history), Blocked
+  accounts (incl. physio ↔ patient blocks), Staff & roles, Zones, Grievances (list with due times, detail with timeline),
+  Platform settings, Audit log. Scrollable sidebar.
+- **Website**: Complaints & Grievance Officer page (`/grievance`), complaint thread with replies; footer links.
+- **Patient app**: Complaints & Grievance Officer screen.
+- **Physio app**: "Block this patient" on the visit screen.
+
 ## [0.5.0] — Phase 4 · Growth: partners, referrals and coins
 
 ### Added (API)

@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/api.ts","./src/booking-state.ts","./src/growth-pages.tsx","./src/main.tsx","./src/pages.tsx","./src/trust-pages.tsx","./src/ui.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/api.ts","./src/booking-state.ts","./src/grievance-pages.tsx","./src/growth-pages.tsx","./src/main.tsx","./src/pages.tsx","./src/trust-pages.tsx","./src/ui.tsx","./src/vite-env.d.ts"],"version":"5.9.3"}

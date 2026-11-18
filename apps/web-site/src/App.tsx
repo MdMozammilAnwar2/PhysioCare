@@ -3,6 +3,7 @@ import { Shell } from './ui';
 import { AboutYou, Bookings, ChoosePayment, Home, PaymentPage, Physio, RequireAuth, SignIn, Time, Where } from './pages';
 import { Chat, Plans, RateVisit, ReportProblem } from './trust-pages';
 import { PartnerPortal, Rewards } from './growth-pages';
+import { GrievancePage, GrievanceThread } from './grievance-pages';
 
 export default function App() {
   return (
@@ -24,6 +25,8 @@ export default function App() {
           <Route path="/chat/:planId" element={<RequireAuth><Chat /></RequireAuth>} />
           <Route path="/rewards" element={<RequireAuth><Rewards /></RequireAuth>} />
           <Route path="/partner" element={<PartnerPortal />} />
+          <Route path="/grievance" element={<GrievancePage />} />
+          <Route path="/grievance/:id" element={<RequireAuth><GrievanceThread /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Shell>

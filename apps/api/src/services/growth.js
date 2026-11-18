@@ -4,8 +4,9 @@ import { sequelize } from '../db/index.js';
 import { HttpError } from '../lib/util.js';
 import { audit } from './audit.js';
 import { User } from '../models/index.js';
+import { config } from '../config/index.js';
 
-export const COINS_PER_RUPEE = 10;
+export const COINS_PER_RUPEE = config.coinsPerRupee;
 export const PAISE_PER_COIN = 100 / COINS_PER_RUPEE; // 10 paise
 export const PARTNER_TYPES = ['doctor', 'hospital', 'clinic', 'pathology_lab', 'physiotherapist', 'pharmacy', 'gym', 'other'];
 
@@ -181,7 +182,7 @@ export async function addPartnerLink(partnerId, label) {
   const p = await one(`SELECT id, name, status FROM partner_orgs WHERE id = :id`, { id: partnerId });
   if (p?.status !== 'approved') throw new HttpError(409, 'partner_not_approved', 'Your account must be approved before you can create QR codes.');
   const n = (await one(`SELECT count(*)::int AS n FROM tracked_links WHERE owner_partner_id = :id`, { id: partnerId })).n;
-  if (n >= 50) throw new HttpError(409, 'too_many_links', 'You can have up to 50 QR codes.');
+  if (n >= config.maxPartnerQrCodes) throw new HttpError(409, 'too_many_links', `You can have up to ${config.maxPartnerQrCodes} QR codes.`);
   return createLink({ type: 'partner_permanent_qr', ownerPartnerId: partnerId, prefix: p.name, meta: { label } });
 }
 export async function partnerRewards(partnerId) {

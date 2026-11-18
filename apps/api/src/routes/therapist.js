@@ -110,7 +110,7 @@ therapistRouter.put('/prices', validate(z.object({
 // ---------- schedule and visits ----------
 therapistRouter.get('/visits', asyncHandler(async (req, res) => {
   const from = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.from)) ? String(req.query.from) : null;
-  const rows = await q(`SELECT v.id, v.mode, v.status, v.physio_consent, lower(v.during) AS starts_at, upper(v.during) AS ends_at, v.family_member,
+  const rows = await q(`SELECT v.id, v.patient_id, v.mode, v.status, v.physio_consent, lower(v.during) AS starts_at, upper(v.during) AS ends_at, v.family_member,
       u.name AS patient_name, u.gender AS patient_gender, a.line1, a.landmark, a.lat, a.lng, z.name AS zone_name, z.color AS zone_color,
       p.sessions_total, pay.id AS payment_id, pay.method AS payment_method, pay.status AS payment_status, pay.amount_paise
     FROM visits v JOIN users u ON u.id = v.patient_id LEFT JOIN addresses a ON a.id = v.address_id LEFT JOIN zones z ON z.id = v.zone_id

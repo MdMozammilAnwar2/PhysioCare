@@ -21,7 +21,7 @@ export default function Chat() {
       last.current = r.messages[r.messages.length - 1].id;
       setItems(x => [...x.filter(m => !r.messages.some(n => n.id === m.id)), ...r.messages]);
     }).catch(e => alive && setError(e instanceof ApiError ? e.message : 'Something went wrong.'));
-    poll(); const t = setInterval(poll, 5000);
+    poll(); const t = setInterval(poll, Number(process.env.EXPO_PUBLIC_CHAT_REFRESH_SECONDS || 5) * 1000);
     return () => { alive = false; clearInterval(t); };
   }, [planId]);
   async function send() {

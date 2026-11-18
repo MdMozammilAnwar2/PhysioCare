@@ -113,3 +113,51 @@ export const growth = {
   adjustCoins: (phone: string, delta: number, note: string) => post('/admin/growth/coins/adjust', { phone, delta, note }),
 };
 export const PARTNER_TYPE_LABEL: Record<string, string> = { doctor: 'Doctor', hospital: 'Hospital', clinic: 'Clinic', pathology_lab: 'Pathology lab', physiotherapist: 'Physiotherapist', pharmacy: 'Pharmacy', gym: 'Gym', other: 'Other' };
+
+// ---------- Phase 5: control ----------
+export type Dashboard = {
+  today: { visits: number; completed: number; live: number; lost: number };
+  queues: { sos: number; verifications: number; payments: number; incidents: number; refunds: number; partners: number; grievances: number; grievances_overdue: number; blocked: number };
+  growth: { signups_today: number; signups_7d: number; first_paid_7d: number; physios_verified: number; partners_active: number };
+  money: { collected_7d: number; collected_30d: number; outstanding: number; payouts_due: number; refunds_due: number; partner_rewards_due: number };
+  trend: { day: string; completed: number; collected: number }[];
+};
+export type UserRow = { id: string; name: string | null; phone: string; gender: string | null; status: string; created_at: string; last_login_at: string | null; roles: string[]; block: { reason: string; note: string; endsAt: string | null; at: string } | null };
+export type BlockRow = { id: string; user_id: string; name: string | null; phone: string; reason_code: string; note: string; ends_at: string | null; until_review: boolean; created_at: string; lifted_at: string | null; lift_note: string | null; blocked_by_name: string | null; roles: string[] };
+export type Zone = { id: string; name: string; color: string; reason: string | null; review_on: string | null; center_lat: number | null; center_lng: number | null; radius_km: number | null; updated_at: string; city: string; city_id: string; upcoming: number };
+export type GrievanceRow = { id: string; ticket_no: string; category: string; status: string; committee: boolean; created_at: string; ack_due_at: string; resolve_due_at: string; acknowledged_at: string | null; resolved_at: string | null; complainant_name: string | null; against_name: string | null; assigned_name: string | null; overdue: boolean };
+export type Scheduling = { visitMinutes: { home: number; video: number; clinic: number }; travelBufferMinutes: number; bookingWindowDays: number; minNoticeHours: number; paymentHoldMinutes: number; offerHoldMinutes: number; minDaysBetweenSessions: number; maxVisitsPerDay: number; freeRescheduleHours: number };
+const put = <T>(p: string, b: unknown) => call<T>(p, { method: 'PUT', body: JSON.stringify(b) });
+const C = '/admin/control';
+export const control = {
+  dashboard: () => call<Dashboard>(`${C}/dashboard`),
+  users: (p: { q?: string; role?: string; status?: string }) => call<{ users: UserRow[] }>(`${C}/users?${new URLSearchParams(Object.entries(p).filter(([, v]) => v) as [string, string][])}`),
+  user: (id: string) => call<{ user: UserRow; blocks: BlockRow[]; personalBlocks: { blocker_id: string; blocked_id: string; reason_code: string | null; note: string | null; created_at: string; blocker_name: string | null; blocked_name: string | null }[]; visits: { total: number; completed: number }; reasons: string[] }>(`${C}/users/${id}`),
+  block: (id: string, b: { reasonCode: string; note: string; days?: number }) => post(`${C}/users/${id}/block`, b),
+  unblock: (id: string, note: string) => post(`${C}/users/${id}/unblock`, { note }),
+  blocks: (active = true) => call<{ blocks: BlockRow[] }>(`${C}/blocks?active=${active ? 1 : 0}`),
+  personalBlocks: () => call<{ blocks: { blocker_id: string; blocked_id: string; reason_code: string | null; note: string | null; created_at: string; blocker_name: string | null; blocker_phone: string; blocked_name: string | null; blocked_phone: string }[] }>(`${C}/personal-blocks`),
+  staff: () => call<{ roles: string[]; staff: { id: string; name: string | null; phone: string; status: string; last_login_at: string | null; roles: string[] }[] }>(`${C}/staff`),
+  addStaff: (b: { phone: string; name?: string; role: string }) => post(`${C}/staff`, b),
+  removeRole: (id: string, role: string) => call(`${C}/staff/${id}/roles/${role}`, { method: 'DELETE' }),
+  zones: () => call<{ zones: Zone[]; cities: { id: string; name: string; status: string }[]; colors: string[] }>(`${C}/zones`),
+  addZone: (b: Record<string, unknown>) => post<{ id: string }>(`${C}/zones`, b),
+  updateZone: (id: string, b: Record<string, unknown>) => call(`${C}/zones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  zoneHistory: (id: string) => call<{ changes: { from_color: string | null; to_color: string; reason: string; created_at: string; changed_by: string | null }[] }>(`${C}/zones/${id}/history`),
+  settings: () => call<{ maintenance: { enabled: boolean; message: string | null }; min_app_version: Record<string, string>; scheduling: Scheduling }>(`${C}/settings`),
+  setMaintenance: (enabled: boolean, message: string | null) => put(`${C}/settings/maintenance`, { enabled, message }),
+  setMinVersions: (v: Record<string, string>) => put(`${C}/settings/min-app-version`, v),
+  setScheduling: (s: Scheduling) => put(`${C}/settings/scheduling`, s),
+  audit: (p: { action?: string; target?: string; before?: number }) => call<{ entries: { id: number; action: string; target_type: string | null; target_id: string | null; before: unknown; after: unknown; ip: string | null; created_at: string; actor_name: string | null; actor_phone: string | null }[] }>(`${C}/audit?${new URLSearchParams(Object.entries(p).filter(([, v]) => v).map(([k, v]) => [k, String(v)]))}`),
+};
+const G = '/admin/grievances';
+export const grievances = {
+  list: (status = 'active') => call<{ grievances: GrievanceRow[]; committee: { id: string; name: string | null }[]; officer: { name: string; email: string | null; ackHours: number; resolveDays: number } }>(`${G}?status=${status}`),
+  get: (id: string) => call<{ grievance: GrievanceRow & { description: string; complainant_phone: string; against_phone: string | null; resolution: string | null; file_ids: string[]; visit_id: string | null }; events: { id: number; kind: string; body: string | null; public: boolean; created_at: string; actor_name: string | null }[] }>(`${G}/${id}`),
+  acknowledge: (id: string, message?: string) => post(`${G}/${id}/acknowledge`, { message }),
+  assign: (id: string, userId: string) => post(`${G}/${id}/assign`, { userId }),
+  note: (id: string, body: string, toComplainant: boolean) => post(`${G}/${id}/note`, { body, toComplainant }),
+  escalate: (id: string, reason: string) => post(`${G}/${id}/escalate`, { reason }),
+  resolve: (id: string, resolution: string, reject = false) => post(`${G}/${id}/resolve`, { resolution, reject }),
+};
+export const ROLE_LABEL: Record<string, string> = { patient: 'Patient', therapist: 'Physio', partner_owner: 'Partner', partner_staff: 'Partner staff', partner_wallet: 'Partner wallet', ops_admin: 'Ops admin', finance: 'Finance', city_coordinator: 'City coordinator', grievance_committee: 'Grievance committee', super_admin: 'Super admin' };

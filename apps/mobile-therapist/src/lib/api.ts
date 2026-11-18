@@ -57,6 +57,7 @@ export type Profile = {
   agreement: { version: string; current: boolean } | null;
 };
 export type Visit = {
+  patient_id: string;
   id: string; mode: string; status: string; physio_consent: 'not_needed' | 'pending' | 'accepted' | 'declined'; starts_at: string; ends_at: string;
   family_member: { name: string; relation: string } | null; patient_name: string | null; patient_gender: string | null; line1: string | null; landmark: string | null;
   lat: number | null; lng: number | null; zone_name: string | null; zone_color: string | null; sessions_total: number | null;
@@ -101,6 +102,7 @@ export const api = {
   sos: (b: { visitId?: string; lat?: number; lng?: number }) => post<{ message: string }>('/therapist/sos', b),
   cashReceived: (paymentId: string) => post(`/therapist/payments/${paymentId}/cash-received`),
   wallet: () => call<Wallet>('/therapist/wallet'),
+  blockPatient: (userId: string, reasonCode: string, note?: string) => post<{ message: string }>('/blocks', { userId, reasonCode, note }),
 };
 
 export const rupees = (p: number) => `₹${Math.round(p / 100).toLocaleString('en-IN')}`;

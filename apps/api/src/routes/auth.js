@@ -10,6 +10,7 @@ import { sendOtp, verifyOtp } from '../services/otp.js';
 import { issueTokens, revokeAllForUser, revokeRefreshToken, rotateRefreshToken, signAccessToken } from '../services/tokens.js';
 import { recordSignupAttribution } from '../services/attribution.js';
 import { onSignup } from '../services/growth.js';
+import { expireBlocks } from '../services/blocks.js';
 import { audit } from '../services/audit.js';
 
 export const authRouter = Router();
@@ -62,6 +63,7 @@ authRouter.post('/otp/verify', validate(verifySchema), asyncHandler(async (req, 
     return { user: u, isNew: created };
   });
 
+  if (user.status === 'blocked' && await expireBlocks(user.id)) await user.reload();
   if (user.status === 'blocked') {
     const block = await Block.findOne({ where: { userId: user.id, liftedAt: null }, order: [['createdAt', 'DESC']] });
     throw new HttpError(403, 'account_blocked', 'This account is blocked.', { endsAt: block?.endsAt ?? null, canAppeal: true });

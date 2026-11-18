@@ -1,4 +1,5 @@
 import { sequelize } from '../db/index.js';
+import { config } from '../config/index.js';
 
 export function distanceKm(aLat, aLng, bLat, bLng) {
   const R = 6371, rad = x => (x * Math.PI) / 180;
@@ -7,8 +8,8 @@ export function distanceKm(aLat, aLng, bLat, bLng) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-// Drive-time estimate until the Google Maps distance matrix is wired in: 3 min per km in city traffic.
-export const travelMinutes = km => Math.ceil(km * 3);
+// Drive-time estimate until the Google Maps distance matrix is wired in (TRAVEL_MINUTES_PER_KM, default 3).
+export const travelMinutes = km => Math.ceil(km * config.visit.travelMinutesPerKm);
 
 // Nearest zone whose centre-radius contains the point. Returns { id, name, color } or null (= outside service).
 export async function zoneForPoint(lat, lng) {

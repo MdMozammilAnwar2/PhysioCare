@@ -2,8 +2,9 @@
 import { Op } from 'sequelize';
 import { ATTRIBUTION_SOURCES } from '@physioconnect/shared';
 import { Attribution, LinkEvent, TrackedLink } from '../models/index.js';
+import { config } from '../config/index.js';
 
-const SAME_DEVICE_SIGNUP_LIMIT = 3; // more sign-ups than this from one device in 24 h is flagged
+const SAME_DEVICE_SIGNUP_LIMIT = config.sameDeviceSignupLimit; // more sign-ups than this from one device in 24 h is flagged
 
 export async function recordSignupAttribution(user, { ref, utm, deviceId, ip, selfReported } = {}, transaction) {
   let link = null;
