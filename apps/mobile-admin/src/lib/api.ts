@@ -42,11 +42,15 @@ const post = <T>(p: string, b?: unknown) => call<T>(p, { method: 'POST', body: J
 
 export type Status = { status: string; version: string; maintenance: { enabled: boolean; message: string | null }; minAppVersion: Record<string, string> | null };
 export type User = { id: string; name: string | null; phone: string; roles: string[]; primaryRole: string };
+// Only the sections a role may see are present.
 export type Dashboard = {
-  today: { visits: number; completed: number; live: number; lost: number };
-  queues: { sos: number; verifications: number; payments: number; incidents: number; refunds: number; partners: number; grievances: number; grievances_overdue: number; blocked: number };
-  growth: { signups_today: number; signups_7d: number; first_paid_7d: number; physios_verified: number; partners_active: number };
-  money: { collected_7d: number; collected_30d: number; outstanding: number; payouts_due: number; refunds_due: number; partner_rewards_due: number };
+  sections: string[];
+  today?: { visits: number; completed: number; live: number; lost: number };
+  queues?: Partial<{ sos: number; verifications: number; payments: number; incidents: number; refunds: number; partners: number; grievances: number; grievances_overdue: number; blocked: number }>;
+  growth?: { signups_today: number; signups_7d: number; first_paid_7d: number; physios_verified: number; partners_active: number };
+  money?: { collected_7d: number; collected_30d: number; outstanding: number; payouts_due: number; refunds_due: number; partner_rewards_due: number };
+  grievance?: { open: number; to_acknowledge: number; overdue: number; due_3_days: number };
+  website?: { published: number; drafts: number; unpublished_edits: number };
 };
 export type Sos = { id: string; status: 'open' | 'acknowledged'; lat: number | null; lng: number | null; created_at: string; visit_id: string | null; raised_by_name: string | null; raised_by_phone: string };
 export type LiveVisit = { id: string; status: string; starts_at: string; therapist_name: string; zone_name: string | null; overrun: boolean; lat: number | null; lng: number | null };

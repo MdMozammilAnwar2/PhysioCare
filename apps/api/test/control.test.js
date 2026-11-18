@@ -106,10 +106,30 @@ describe('platform settings', () => {
     const e = (await request(app).get('/api/v1/admin/control/audit?action=maintenance').set(auth(superAdmin.token)).expect(200)).body.entries;
     expect(e[0].action).toMatch(/^maintenance\./);
   });
-  it('dashboard has today, queues, growth, money and a 14-day trend', async () => {
-    const d = (await request(app).get('/api/v1/admin/control/dashboard').set(auth(finance.token)).expect(200)).body;
-    expect(Object.keys(d)).toEqual(['today', 'queues', 'growth', 'money', 'trend']);
-    expect(d.trend).toHaveLength(14);
+  it('each role’s dashboard has only its own sections; money never reaches non-finance roles', async () => {
+    const dash = async u => (await request(app).get('/api/v1/admin/control/dashboard').set(auth(u.token)).expect(200)).body;
+    const f = await dash(finance);
+    expect(f.sections).toEqual(['today', 'queues', 'money', 'growth']);
+    expect(Object.keys(f.queues).sort()).toEqual(['payments', 'refunds']);
+    expect(f.trend).toHaveLength(14);
+    expect(f.trend[0]).toHaveProperty('collected');
+    const o = await dash(ops);
+    expect(o.sections).toEqual(['today', 'queues', 'growth', 'grievance', 'website']);
+    expect(o.money).toBeUndefined();
+    expect(o.trend[0]).not.toHaveProperty('collected');
+    const editor = await withRole('content_editor');
+    const e = await dash(editor);
+    expect(e.sections).toEqual(['website']);
+    expect(e.money).toBeUndefined(); expect(e.today).toBeUndefined(); expect(e.queues).toBeUndefined();
+    expect(e.website).toHaveProperty('published');
+    const committee = await withRole('grievance_committee');
+    const g = await dash(committee);
+    expect(g.sections).toEqual(['queues', 'grievance']);
+    expect(Object.keys(g.queues).sort()).toEqual(['grievances', 'grievances_overdue']);
+    expect(g.grievance).toHaveProperty('avg_days_to_resolve');
+    expect(g.money).toBeUndefined();
+    const s = await dash(superAdmin);
+    expect(s.sections).toEqual(['today', 'queues', 'money', 'growth', 'grievance', 'website']);
   });
 });
 

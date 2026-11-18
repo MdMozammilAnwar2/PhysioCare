@@ -115,12 +115,17 @@ export const growth = {
 export const PARTNER_TYPE_LABEL: Record<string, string> = { doctor: 'Doctor', hospital: 'Hospital', clinic: 'Clinic', pathology_lab: 'Pathology lab', physiotherapist: 'Physiotherapist', pharmacy: 'Pharmacy', gym: 'Gym', other: 'Other' };
 
 // ---------- Phase 5: control ----------
+// Only the sections a role may see are present (listed in `sections`).
 export type Dashboard = {
-  today: { visits: number; completed: number; live: number; lost: number };
-  queues: { sos: number; verifications: number; payments: number; incidents: number; refunds: number; partners: number; grievances: number; grievances_overdue: number; blocked: number };
-  growth: { signups_today: number; signups_7d: number; first_paid_7d: number; physios_verified: number; partners_active: number };
-  money: { collected_7d: number; collected_30d: number; outstanding: number; payouts_due: number; refunds_due: number; partner_rewards_due: number };
-  trend: { day: string; completed: number; collected: number }[];
+  roles: string[];
+  sections: ('today' | 'queues' | 'money' | 'growth' | 'grievance' | 'website')[];
+  today?: { visits: number; completed: number; live: number; lost: number };
+  queues?: Partial<{ sos: number; verifications: number; payments: number; incidents: number; refunds: number; partners: number; grievances: number; grievances_overdue: number; blocked: number }>;
+  growth?: { signups_today: number; signups_7d: number; first_paid_7d: number; physios_verified: number; partners_active: number };
+  money?: { collected_7d: number; collected_30d: number; outstanding: number; payouts_due: number; refunds_due: number; partner_rewards_due: number };
+  trend?: { day: string; completed: number; collected?: number }[];
+  grievance?: { open: number; to_acknowledge: number; overdue: number; due_3_days: number; committee_open: number; resolved_30d: number; avg_days_to_resolve: number; byCategory: { category: string; n: number }[] };
+  website?: { published: number; drafts: number; unpublished_edits: number; blog_posts: number; legal_drafts: number; recent: { id: string; title: string; slug: string; status: string; updated_at: string; by_name: string | null }[] };
 };
 export type UserRow = { id: string; name: string | null; phone: string; gender: string | null; status: string; created_at: string; last_login_at: string | null; roles: string[]; block: { reason: string; note: string; endsAt: string | null; at: string } | null };
 export type BlockRow = { id: string; user_id: string; name: string | null; phone: string; reason_code: string; note: string; ends_at: string | null; until_review: boolean; created_at: string; lifted_at: string | null; lift_note: string | null; blocked_by_name: string | null; roles: string[] };

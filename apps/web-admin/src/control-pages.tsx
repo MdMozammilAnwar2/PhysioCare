@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ApiError, control, grievances, ROLE_LABEL, rupees, when, type BlockRow, type Dashboard as DashboardData, type GrievanceRow, type Scheduling, type UserRow, type Zone } from './api';
+import { ApiError, control, grievances, ROLE_LABEL, rupees, when, type BlockRow, type GrievanceRow, type Scheduling, type UserRow, type Zone } from './api';
 import { Header } from './pages';
 
 const msg = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong.');
@@ -22,82 +22,6 @@ const ZONE_INK: Record<string, string> = { green: '#047857', blue: '#0369A1', ye
 const ZONE_MEANING: Record<string, string> = { green: 'Live', blue: 'Launching', yellow: 'Limited supply', orange: 'Restricted', red: 'Blocked' };
 const ZonePill = ({ color }: { color: string }) => <span className="rounded-full px-2.5 py-1 text-xs font-bold capitalize" style={{ background: ZONE_BG[color], color: ZONE_INK[color] }}>{color} · {ZONE_MEANING[color]}</span>;
 const REASON_LABEL: Record<string, string> = { fraud: 'Fraud', abuse: 'Abuse', harassment: 'Harassment', safety: 'Safety risk', no_show_repeat: 'Repeated no-shows', payment_default: 'Not paying', fake_documents: 'Fake documents', off_platform: 'Taking business off the app', spam: 'Spam', legal: 'Legal order', other: 'Other', unsafe_home: 'Unsafe home' };
-
-// ---------- Dashboard ----------
-export function Dashboard({ roles }: { roles: string[] }) {
-  const [d, setD] = useState<DashboardData | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
-    const load = () => control.dashboard().then(setD).catch(e => setErr(msg(e)));
-    load(); const t = setInterval(load, 60_000); return () => clearInterval(t);
-  }, []);
-  const has = (...r: string[]) => roles.some(x => r.includes(x));
-  if (!d) return <div><Header title="Dashboard" /><Err e={err} /></div>;
-  const maxDone = Math.max(1, ...d.trend.map(t => t.completed));
-  return (
-    <div className="flex flex-col gap-6">
-      <Header kicker={new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' })} title="Dashboard" />
-      {d.queues.sos > 0 && <Link to="/live" className="rounded-xl bg-danger text-white font-extrabold px-5 py-4">{d.queues.sos} SOS open. Open live visits now ›</Link>}
-      <section className="flex flex-col gap-2">
-        <h2 className="font-extrabold">Today</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Tile label="Visits" value={d.today.visits} to="/live" />
-          <Tile label="In progress" value={d.today.live} to="/live" />
-          <Tile label="Completed" value={d.today.completed} />
-          <Tile label="Cancelled / no-show" value={d.today.lost} />
-        </div>
-      </section>
-      <section className="flex flex-col gap-2">
-        <h2 className="font-extrabold">Needs action</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3">
-          {has('ops_admin', 'super_admin', 'city_coordinator') && <Tile label="Physios to verify" value={d.queues.verifications} to="/verification" />}
-          {has('ops_admin', 'finance', 'super_admin') && <Tile label="Payments to confirm" value={d.queues.payments} to="/payments" />}
-          {has('ops_admin', 'super_admin') && <Tile label="Open incidents" value={d.queues.incidents} to="/incidents" alert={d.queues.incidents > 0} />}
-          {has('ops_admin', 'finance', 'super_admin') && <Tile label="Refunds" value={d.queues.refunds} to="/refunds" />}
-          {has('ops_admin', 'city_coordinator', 'super_admin') && <Tile label="Partners to review" value={d.queues.partners} to="/partners" />}
-          {has('grievance_committee', 'ops_admin', 'super_admin') && <Tile label="Open grievances" value={d.queues.grievances} to="/grievances" />}
-          {has('grievance_committee', 'ops_admin', 'super_admin') && <Tile label="Grievances overdue" value={d.queues.grievances_overdue} to="/grievances" alert={d.queues.grievances_overdue > 0} />}
-          <Tile label="Blocked accounts" value={d.queues.blocked} to="/blocks" />
-        </div>
-      </section>
-      {has('finance', 'super_admin') && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-extrabold">Money</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-            <Tile label="Collected, 7 days" value={rupees(d.money.collected_7d)} />
-            <Tile label="Collected, 30 days" value={rupees(d.money.collected_30d)} />
-            <Tile label="Not yet paid by patients" value={rupees(d.money.outstanding)} to="/payments" />
-            <Tile label="Physio payouts due" value={rupees(d.money.payouts_due)} to="/payouts" />
-            <Tile label="Refunds to send" value={rupees(d.money.refunds_due)} to="/refunds" />
-            <Tile label="Partner rewards due" value={rupees(d.money.partner_rewards_due)} to="/partners" />
-          </div>
-        </section>
-      )}
-      <section className="flex flex-col gap-2">
-        <h2 className="font-extrabold">Growth</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Tile label="Sign-ups today" value={d.growth.signups_today} />
-          <Tile label="Sign-ups, 7 days" value={d.growth.signups_7d} to="/growth" />
-          <Tile label="First paid visit, 7 days" value={d.growth.first_paid_7d} />
-          <Tile label="Verified physios" value={d.growth.physios_verified} />
-          <Tile label="Active partners" value={d.growth.partners_active} to="/partners" />
-        </div>
-      </section>
-      <Card>
-        <p className="font-extrabold mb-3">Completed visits, last 14 days</p>
-        <div className="flex items-end gap-1.5 h-32" role="img" aria-label={`Completed visits per day: ${d.trend.map(t => t.completed).join(', ')}`}>
-          {d.trend.map(t => (
-            <div key={t.day} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${t.day}: ${t.completed} visits, ${rupees(t.collected)}`}>
-              <span className="text-[10px] text-sub tabular-nums">{t.completed || ''}</span>
-              <div className="w-full rounded-t bg-brand" style={{ height: `${(100 * t.completed) / maxDone}%`, minHeight: t.completed ? 4 : 1, opacity: t.completed ? 1 : 0.2 }} />
-              <span className="text-[10px] text-sub">{Number(t.day.slice(8))}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 // ---------- Users and blocks ----------
 export function Users() {

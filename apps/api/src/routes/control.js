@@ -256,7 +256,51 @@ controlRouter.get('/dashboard', requireRole(...ADMIN_ROLES), asyncHandler(async 
       FROM generate_series(${istToday} - 13, ${istToday}, interval '1 day') d ORDER BY d`),
   ]);
   const toNum = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Number(v)]));
-  res.json({ today, queues, growth, money: toNum(money), trend: trend.map(t => ({ ...t, collected: Number(t.collected) })) });
+  // Each role gets only its own sections; nobody receives data their role can't open.
+  const has = (...r) => req.user.roles.some(x => r.includes(x));
+  const ops = has('ops_admin', 'city_coordinator', 'super_admin');
+  const fin = has('finance', 'super_admin');
+  const griev = has('grievance_committee', 'ops_admin', 'super_admin');
+  const web = has('content_editor', 'ops_admin', 'super_admin');
+  const out = { roles: req.user.roles, sections: [] };
+  if (ops || fin) { out.today = today; out.sections.push('today'); }
+  const qKeys = [
+    ...(ops ? ['sos', 'verifications', 'partners', 'blocked'] : []),
+    ...(has('ops_admin', 'super_admin') ? ['incidents'] : []),
+    ...(has('ops_admin', 'finance', 'super_admin') ? ['payments', 'refunds'] : []),
+    ...(griev ? ['grievances', 'grievances_overdue'] : []),
+  ];
+  if (qKeys.length) { out.queues = Object.fromEntries(qKeys.map(k => [k, queues[k]])); out.sections.push('queues'); }
+  if (fin) { out.money = toNum(money); out.sections.push('money'); }
+  if (ops || fin) { out.growth = growth; out.sections.push('growth'); }
+  if (ops || fin) out.trend = trend.map(t => ({ day: t.day, completed: t.completed, ...(fin ? { collected: Number(t.collected) } : {}) }));
+  if (griev) {
+    const committee = has('grievance_committee', 'super_admin');
+    out.grievance = {
+      ...(await one(`SELECT count(*) FILTER (WHERE status NOT IN ('resolved', 'rejected'))::int AS open,
+          count(*) FILTER (WHERE status NOT IN ('resolved', 'rejected') AND acknowledged_at IS NULL)::int AS to_acknowledge,
+          count(*) FILTER (WHERE status NOT IN ('resolved', 'rejected') AND (resolve_due_at < now() OR (acknowledged_at IS NULL AND ack_due_at < now())))::int AS overdue,
+          count(*) FILTER (WHERE status NOT IN ('resolved', 'rejected') AND resolve_due_at BETWEEN now() AND now() + interval '3 days')::int AS due_3_days,
+          count(*) FILTER (WHERE committee AND status NOT IN ('resolved', 'rejected'))::int AS committee_open,
+          count(*) FILTER (WHERE resolved_at >= now() - interval '30 days')::int AS resolved_30d,
+          COALESCE(round(avg(EXTRACT(EPOCH FROM resolved_at - created_at) / 86400) FILTER (WHERE resolved_at >= now() - interval '90 days')::numeric, 1), 0)::float AS avg_days_to_resolve
+        FROM grievances WHERE (:committee OR NOT committee)`, { committee })),
+      byCategory: await q(`SELECT category, count(*)::int AS n FROM grievances WHERE status NOT IN ('resolved', 'rejected') AND (:committee OR NOT committee) GROUP BY category ORDER BY n DESC`, { committee }),
+    };
+    out.sections.push('grievance');
+  }
+  if (web) {
+    out.website = {
+      ...(await one(`SELECT count(*) FILTER (WHERE status = 'published')::int AS published, count(*) FILTER (WHERE status = 'draft')::int AS drafts,
+          count(*) FILTER (WHERE status = 'published' AND (blocks <> published_blocks OR title <> published_title OR seo <> COALESCE(published_seo, '{}')))::int AS unpublished_edits,
+          count(*) FILTER (WHERE kind = 'blog' AND status = 'published')::int AS blog_posts,
+          count(*) FILTER (WHERE kind = 'legal' AND status = 'published' AND published_blocks::text ILIKE '%for legal review%')::int AS legal_drafts
+        FROM cms_pages`)),
+      recent: await q(`SELECT p.id, p.title, p.slug, p.status, p.updated_at, u.name AS by_name FROM cms_pages p LEFT JOIN users u ON u.id = p.updated_by ORDER BY p.updated_at DESC LIMIT 6`),
+    };
+    out.sections.push('website');
+  }
+  res.json(out);
 }));
 
 // ---------- personal blocks by physios and patients ----------

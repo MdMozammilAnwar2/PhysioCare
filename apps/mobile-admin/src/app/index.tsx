@@ -47,28 +47,28 @@ export default function Home() {
       </View>
       {user && <Text style={s.muted}>{user.name ?? user.phone} · {user.primaryRole.replace('_', ' ')}</Text>}
       {error && <Text style={{ color: C.red, fontFamily: F.w600 }}>{error}</Text>}
-      {d && d.queues.sos > 0 && (
+      {d && (d.queues?.sos ?? 0) > 0 && (
         <Pressable onPress={() => router.push('/live')} accessibilityRole="button" style={{ backgroundColor: '#E11D48', borderRadius: 16, padding: 16 }}>
-          <Text style={{ color: '#fff', fontFamily: F.w800, fontSize: 18 }}>🚨 {d.queues.sos} SOS open — tap to respond</Text>
+          <Text style={{ color: '#fff', fontFamily: F.w800, fontSize: 18 }}>🚨 {(d.queues?.sos ?? 0)} SOS open — tap to respond</Text>
         </Pressable>
       )}
       {d && (
         <>
           <Section title="Needs action">
-            {has('ops_admin', 'super_admin', 'finance') && <Tile label="Payments to confirm" value={d.queues.payments} onPress={() => router.push('/approvals')} />}
-            {has('ops_admin', 'super_admin', 'city_coordinator') && <Tile label="Partners to review" value={d.queues.partners} onPress={() => router.push('/approvals')} />}
-            {has('ops_admin', 'super_admin', 'finance') && <Tile label="Refunds" value={d.queues.refunds} onPress={() => router.push('/approvals')} />}
-            {has('ops_admin', 'super_admin') && <Tile label="Open incidents" value={d.queues.incidents} alert={d.queues.incidents > 0} />}
-            {has('ops_admin', 'super_admin', 'city_coordinator') && <Tile label="Physios to verify" value={d.queues.verifications} />}
-            {has('grievance_committee', 'ops_admin', 'super_admin') && <Tile label="Grievances overdue" value={d.queues.grievances_overdue} alert={d.queues.grievances_overdue > 0} />}
+            {has('ops_admin', 'super_admin', 'finance') && <Tile label="Payments to confirm" value={(d.queues?.payments ?? 0)} onPress={() => router.push('/approvals')} />}
+            {has('ops_admin', 'super_admin', 'city_coordinator') && <Tile label="Partners to review" value={(d.queues?.partners ?? 0)} onPress={() => router.push('/approvals')} />}
+            {has('ops_admin', 'super_admin', 'finance') && <Tile label="Refunds" value={(d.queues?.refunds ?? 0)} onPress={() => router.push('/approvals')} />}
+            {has('ops_admin', 'super_admin') && <Tile label="Open incidents" value={(d.queues?.incidents ?? 0)} alert={(d.queues?.incidents ?? 0) > 0} />}
+            {has('ops_admin', 'super_admin', 'city_coordinator') && <Tile label="Physios to verify" value={(d.queues?.verifications ?? 0)} />}
+            {has('grievance_committee', 'ops_admin', 'super_admin') && <Tile label="Grievances overdue" value={(d.queues?.grievances_overdue ?? 0)} alert={(d.queues?.grievances_overdue ?? 0) > 0} />}
           </Section>
-          <Section title="Today">
+          {d.today && <Section title="Today">
             <Tile label="Visits" value={d.today.visits} onPress={() => router.push('/live')} />
             <Tile label="In progress" value={d.today.live} onPress={() => router.push('/live')} />
             <Tile label="Completed" value={d.today.completed} />
             <Tile label="Cancelled / no-show" value={d.today.lost} />
-          </Section>
-          {has('finance', 'super_admin') && (
+          </Section>}
+          {d.money && (
             <Section title="Money">
               <Tile label="Collected, 7 days" value={rupees(d.money.collected_7d)} />
               <Tile label="Not yet paid" value={rupees(d.money.outstanding)} />
@@ -76,12 +76,20 @@ export default function Home() {
               <Tile label="Refunds to send" value={rupees(d.money.refunds_due)} />
             </Section>
           )}
-          <Section title="Growth">
+          {d.grievance && (
+            <Section title="Grievances">
+              <Tile label="Open" value={d.grievance.open} />
+              <Tile label="To acknowledge" value={d.grievance.to_acknowledge} alert={d.grievance.to_acknowledge > 0} />
+              <Tile label="Overdue" value={d.grievance.overdue} alert={d.grievance.overdue > 0} />
+              <Tile label="Due in 3 days" value={d.grievance.due_3_days} />
+            </Section>
+          )}
+          {d.growth && <Section title="Growth">
             <Tile label="Sign-ups today" value={d.growth.signups_today} />
             <Tile label="Sign-ups, 7 days" value={d.growth.signups_7d} />
             <Tile label="Verified physios" value={d.growth.physios_verified} />
             <Tile label="Active partners" value={d.growth.partners_active} />
-          </Section>
+          </Section>}
         </>
       )}
       <View style={{ gap: 10 }}>
