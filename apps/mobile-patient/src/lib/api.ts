@@ -83,6 +83,9 @@ export const api = {
   // Image source for protected images (QR code): <Image source={api.imageSource(path)} />.
   imageSource: (path: string) => ({ uri: `${BASE.replace(/\/api\/v1$/, '')}${path}`, headers: access ? { Authorization: `Bearer ${access}` } : undefined }),
 
+  // Phase 7: video and calendar.
+  video: (visitId: string) => call<{ url: string }>(`/video/${visitId}`),
+  calendar: () => call<{ feedUrl: string }>('/calendar/me'),
   // Phase 5: grievances.
   grievanceOfficer: () => call<{ officer: { name: string; designation: string; email: string | null; phone: string | null; address: string; hours: string; ackHours: number; resolveDays: number } }>('/public/grievance-officer'),
   myGrievances: () => call<{ grievances: { id: string; ticket_no: string; status: string; resolution: string | null }[] }>('/grievances'),

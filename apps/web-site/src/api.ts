@@ -136,4 +136,15 @@ export const cms = {
   physios: (limit = 24, speciality = '') => raw<{ physios: PublicPhysio[] }>(`/public/physios?limit=${limit}${speciality ? `&speciality=${encodeURIComponent(speciality)}` : ''}`),
   physio: (id: string) => raw<{ physio: PublicPhysio; reviews: { stars: number; tags: string[]; comment: string; created_at: string; first_name: string }[] }>(`/public/physios/${id}`),
 };
+// ---------- Phase 7: calendars and video ----------
+export const calendar = {
+  me: () => raw<{ feedUrl: string }>('/calendar/me'),
+  video: (visitId: string) => raw<{ url: string; opensAt: string; closesAt: string }>(`/video/${visitId}`),
+  // Downloads one visit as .ics (needs the sign-in token, so it is fetched, then saved).
+  addToCalendar: async (visitId: string) => {
+    const res = await fetch(`/api/v1/calendar/visits/${visitId}.ics`, { headers: store.access ? { authorization: `Bearer ${store.access}` } : {} });
+    if (!res.ok) throw new ApiError(res.status, 'ics_failed', 'Couldn’t create the calendar file.');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = 'physiocare-visit.ics'; a.click();
+  },
+};
 export const fileUrl = (id: string) => `/api/v1/files/${id}/content`;

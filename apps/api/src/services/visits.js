@@ -51,6 +51,7 @@ export async function onTheWay({ therapistId, visitId }) {
   return sequelize.transaction(async t => {
     const v = await physioVisit(therapistId, visitId, t);
     needConsent(v);
+    if (v.mode === 'video') throw new HttpError(409, 'video_visit', 'This is a video session. Start the video session instead.');
     if (v.status !== 'booked') throw new HttpError(409, 'wrong_state', 'This visit can’t start now.');
     await sequelize.query(`UPDATE visits SET status = 'on_the_way', on_the_way_at = now(), updated_at = now() WHERE id = :id`, { replacements: { id: v.id }, transaction: t });
     await notify(v.patient_id, 'physio_on_the_way', 'Your physio is on the way', 'Keep your check-in code ready. Share it only when your physio arrives.', { visitId: v.id }, t);
@@ -85,6 +86,54 @@ export async function checkIn({ therapistId, visitId, code, familyPresent, ip })
       result.locked ? 'Too many wrong codes. Check-in is locked and our team has been alerted.' : `Wrong code. ${result.left} tries left.`);
   }
   return result;
+}
+
+// ---------- video visits ----------
+// Room names come from a server secret and the visit id: private, unguessable, nothing to store.
+export const videoRoom = visitId => `${config.video.roomPrefix}-${hmac(config.otpSecret, `video:${visitId}`).slice(0, 20)}`;
+function videoWindow(v) {
+  const opens = new Date(new Date(v.starts_at).getTime() - config.video.joinEarlyMinutes * 60_000);
+  const closes = new Date(new Date(v.ends_at).getTime() + config.video.joinLateMinutes * 60_000);
+  return { opens, closes, open: Date.now() >= opens.getTime() && Date.now() <= closes.getTime() };
+}
+const istTime = d => d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' });
+
+/** Patient or physio of a video visit gets the meeting link, only inside the join window. */
+export async function joinVideo({ userId, visitId }) {
+  const v = await one(`SELECT v.*, lower(v.during) AS starts_at, upper(v.during) AS ends_at, pu.name AS patient_name, tu.name AS physio_name
+    FROM visits v JOIN users pu ON pu.id = v.patient_id JOIN users tu ON tu.id = v.therapist_id WHERE v.id = :id AND (v.patient_id = :u OR v.therapist_id = :u)`, { id: visitId, u: userId });
+  if (!v) throw new HttpError(404, 'not_found', 'Visit not found.');
+  if (v.mode !== 'video') throw new HttpError(409, 'not_video', 'This is not a video session.');
+  if (!['booked', 'checked_in'].includes(v.status)) throw new HttpError(409, 'wrong_state', 'This session is not open.');
+  if (v.physio_consent === 'pending' || v.physio_consent === 'declined') throw new HttpError(409, 'consent_pending', 'The physiotherapist hasn’t confirmed this session yet.');
+  const w = videoWindow(v);
+  if (!w.open) {
+    const early = Date.now() < w.opens.getTime();
+    throw new HttpError(409, early ? 'too_early' : 'too_late', early ? `The call opens at ${istTime(w.opens)}.` : 'This session has ended.', { opensAt: w.opens, closesAt: w.closes });
+  }
+  const isPhysio = v.therapist_id === userId;
+  const col = isPhysio ? 'physio_joined_at' : 'patient_joined_at';
+  await sequelize.query(`UPDATE visits SET ${col} = COALESCE(${col}, now()) WHERE id = :id`, { replacements: { id: v.id } });
+  const name = isPhysio ? v.physio_name : String(v.patient_name ?? 'Patient').split(' ')[0];
+  const room = videoRoom(v.id);
+  // Jitsi Meet: open the room straight away with the person's name filled in.
+  const url = `${config.video.baseUrl}/${room}#userInfo.displayName=%22${encodeURIComponent(name ?? '')}%22&config.prejoinConfig.enabled=false`;
+  return { provider: config.video.provider, room, url, opensAt: w.opens, closesAt: w.closes, role: isPhysio ? 'therapist' : 'patient' };
+}
+
+/** Physio starts the video session: it counts as checked in (there's no door code on a video call). */
+export async function startVideo({ therapistId, visitId, ip }) {
+  return sequelize.transaction(async t => {
+    const v = await physioVisit(therapistId, visitId, t);
+    needConsent(v);
+    if (v.mode !== 'video') throw new HttpError(409, 'not_video', 'This is not a video session.');
+    if (v.status !== 'booked') throw new HttpError(409, 'wrong_state', 'This session can’t start now.');
+    if (!videoWindow(v).open) throw new HttpError(409, 'too_early', `You can start from ${config.video.joinEarlyMinutes} minutes before the session.`);
+    await sequelize.query(`UPDATE visits SET status = 'checked_in', checked_in_at = now(), video_started_at = now(), updated_at = now() WHERE id = :id`, { replacements: { id: v.id }, transaction: t });
+    await notify(v.patient_id, 'video_started', 'Your physio is waiting on video', 'Open My bookings and tap “Join video call”.', { visitId: v.id }, t);
+    await audit({ actor: { id: therapistId, primaryRole: 'therapist' }, action: 'visit.video_started', targetType: 'visit', targetId: v.id, ip }, t);
+    return { status: 'checked_in' };
+  });
 }
 
 // Gender-rule visit and no adult family member at home: the physio leaves; the visit is moved free for the patient.

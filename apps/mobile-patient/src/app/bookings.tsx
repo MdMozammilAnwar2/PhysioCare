@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Linking, Share, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { api, ApiError, fmtDay, fmtTime, tokens } from '../lib/api';
 import { F, Button, C, Card, ErrorText, Screen, s } from '../lib/ui';
@@ -33,6 +33,7 @@ export default function Bookings() {
               {b.payment_method === 'upi' ? 'UPI' : 'Cash'} · {({ pending: 'payment due', submitted: 'checking payment', paid: 'paid', rejected: 'payment needs attention' } as Record<string, string>)[b.payment_status ?? 'pending']} ›
             </Text>
           )}
+          {b.mode === 'video' && ['booked', 'checked_in'].includes(b.status) && <Button title="Join video call" onPress={() => api.video(b.id).then(r => Linking.openURL(r.url)).catch(e => setError(e instanceof ApiError ? e.message : 'Couldn’t open the call.'))} />}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
             {b.plan_id && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/[planId]', params: { planId: b.plan_id! } })} style={{ color: C.brand, fontFamily: F.w700, paddingVertical: 8 }}>Message</Text>}
             {b.status === 'completed' && !b.rated && <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/rate/[id]', params: { id: b.id } })} style={{ color: C.brand, fontFamily: F.w700, paddingVertical: 8 }}>Rate visit</Text>}
@@ -42,6 +43,7 @@ export default function Bookings() {
       ))}
       <Button title="My plans and refunds" variant="ghost" onPress={() => router.push('/plans')} />
       <Button title="Refer & coins" variant="ghost" onPress={() => router.push('/rewards')} />
+      <Button title="Show my visits in my phone’s calendar" variant="ghost" onPress={() => api.calendar().then(r => Linking.openURL(r.feedUrl.replace(/^https?:/, 'webcal:')).catch(() => Share.share({ message: r.feedUrl }))).catch(() => setError('Couldn’t get your calendar link.'))} />
       <Button title="Complaints & Grievance Officer" variant="ghost" onPress={() => router.push('/grievance')} />
       <Button title="Sign out" variant="ghost" onPress={async () => { await tokens.clear(); router.replace('/'); }} />
     </Screen>

@@ -89,6 +89,30 @@ export const config = {
     red: hours('ZONE_HOURS_RED', 'closed'),
   },
 
+  // ---------- calendars ----------
+  calendar: {
+    // Google Calendar (OAuth). Create credentials at console.cloud.google.com → APIs & Services → Credentials
+    // (OAuth client ID, type "Web application", redirect URI = PUBLIC_API_URL + /api/v1/calendar/google/callback).
+    googleClientId: str('GOOGLE_CLIENT_ID', ''),
+    googleClientSecret: str('GOOGLE_CLIENT_SECRET', ''),
+    // Key that encrypts stored calendar tokens (32+ random characters). Falls back to a dev-only key.
+    tokenKey: required('CALENDAR_TOKEN_KEY', 'dev-only-calendar-token-key-change-me'),
+    syncMinutes: num('CALENDAR_SYNC_MINUTES', 10),
+    syncDaysAhead: num('CALENDAR_SYNC_DAYS_AHEAD', 60),
+    feedDaysBack: num('CALENDAR_FEED_DAYS_BACK', 30),
+    feedDaysAhead: num('CALENDAR_FEED_DAYS_AHEAD', 90),
+    calendlyApiUrl: str('CALENDLY_API_URL', 'https://api.calendly.com'),
+  },
+
+  // ---------- video visits ----------
+  video: {
+    provider: str('VIDEO_PROVIDER', 'jitsi'), // jitsi (free, no accounts) — rooms are private, unguessable per visit
+    baseUrl: str('VIDEO_BASE_URL', 'https://meet.jit.si').replace(/\/$/, ''),
+    roomPrefix: str('VIDEO_ROOM_PREFIX', 'PhysioCare'),
+    joinEarlyMinutes: num('VIDEO_JOIN_EARLY_MINUTES', 10),
+    joinLateMinutes: num('VIDEO_JOIN_LATE_MINUTES', 30),
+  },
+
   // ---------- growth ----------
   coinsPerRupee: num('COINS_PER_RUPEE', 10),
   maxPartnerQrCodes: num('MAX_PARTNER_QR_CODES', 50),

@@ -29,6 +29,7 @@ export default function Schedule() {
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1 }}><Button title="Hours & prices" variant="ghost" onPress={() => router.push('/hours')} /></View>
         <View style={{ flex: 1 }}><Button title="Earnings" variant="ghost" onPress={() => router.push('/wallet')} /></View>
+        <View style={{ flex: 1 }}><Button title="Calendar" variant="ghost" onPress={() => router.push('/calendar')} /></View>
         <View style={{ flex: 1 }}><Button title="Refresh" variant="ghost" onPress={load} /></View>
       </View>
       <ErrorText error={error} />

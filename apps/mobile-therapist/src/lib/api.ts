@@ -102,6 +102,15 @@ export const api = {
   sos: (b: { visitId?: string; lat?: number; lng?: number }) => post<{ message: string }>('/therapist/sos', b),
   cashReceived: (paymentId: string) => post(`/therapist/payments/${paymentId}/cash-received`),
   wallet: () => call<Wallet>('/therapist/wallet'),
+  // Phase 7: video and calendars.
+  video: (visitId: string) => call<{ url: string; room: string }>(`/video/${visitId}`),
+  startVideo: (visitId: string) => post(`/video/${visitId}/start`),
+  calendar: () => call<{ feedUrl: string; googleAvailable: boolean; connections: { id: string; provider: string; account_email: string | null; status: string; last_synced_at: string | null; last_error: string | null }[] }>('/calendar/me'),
+  googleConnect: () => call<{ url: string }>('/calendar/google/connect'),
+  calendly: (token: string) => post<{ email: string; webhook: boolean }>('/calendar/calendly', { token }),
+  calendarSync: () => post('/calendar/sync'),
+  disconnectCalendar: (id: string) => call(`/calendar/connections/${id}`, { method: 'DELETE' }),
+  rotateFeed: () => post<{ feedUrl: string }>('/calendar/feed/rotate'),
   blockPatient: (userId: string, reasonCode: string, note?: string) => post<{ message: string }>('/blocks', { userId, reasonCode, note }),
 };
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { api, ApiError, growth, isSignedIn, rupees, type Booking, type Match, type Package, type Payment, type Zone } from './api';
+import { api, ApiError, calendar, growth, isSignedIn, rupees, type Booking, type Match, type Package, type Payment, type Zone } from './api';
 import { captureAttribution, draft, pendingAttribution } from './booking-state';
 import { Button, Card, Chips, ErrorText, Field, Page, ZonePill } from './ui';
 
@@ -396,7 +396,9 @@ export function PaymentPage() {
 export function Bookings() {
   const [rows, setRows] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { api.bookings().then(r => setRows(r.bookings)).catch(e => setError(msg(e))); }, []);
+  const [feed, setFeed] = useState<string | null>(null);
+  useEffect(() => { api.bookings().then(r => setRows(r.bookings)).catch(e => setError(msg(e))); calendar.me().then(r => setFeed(r.feedUrl)).catch(() => undefined); }, []);
+  const joinVideo = async (id: string) => { setError(null); try { const r = await calendar.video(id); window.open(r.url, '_blank', 'noopener'); } catch (e) { setError(msg(e)); } };
   return (
     <Page title="My bookings">
       <ErrorText error={error} />
@@ -413,6 +415,8 @@ export function Bookings() {
             </Link>
           )}
           <div className="flex gap-4 flex-wrap text-sm font-bold">
+            {b.mode === 'video' && ['booked', 'checked_in'].includes(b.status) && <button onClick={() => joinVideo(b.id)} className="text-white bg-brand rounded-lg px-3 py-1.5">Join video call</button>}
+            {['booked', 'on_the_way', 'checked_in'].includes(b.status) && <button onClick={() => calendar.addToCalendar(b.id).catch(e => setError(msg(e)))} className="text-brand">Add to calendar</button>}
             {b.plan_id && <Link to={`/chat/${b.plan_id}`} className="text-brand">Message physio</Link>}
             {b.status === 'completed' && !b.rated && <Link to={`/visits/${b.id}/rate`} className="text-brand">Rate this visit</Link>}
             {['completed', 'in_progress', 'booked', 'no_show'].includes(b.status) && <Link to={`/visits/${b.id}/report`} className="text-sub underline">Report a problem</Link>}
@@ -420,6 +424,7 @@ export function Bookings() {
         </Card>
       ))}
       <Link to="/plans" className="text-brand font-bold">My plans and refunds ›</Link>
+      {feed && <p className="text-sm text-sub">See every visit in your phone’s calendar: <a href={feed.replace(/^https?:/, 'webcal:')} className="text-brand font-bold">subscribe</a> or copy this private link into Google Calendar › Other calendars › From URL: <button onClick={() => navigator.clipboard.writeText(feed)} className="text-brand font-bold underline">copy link</button></p>}
     </Page>
   );
 }

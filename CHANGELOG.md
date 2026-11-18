@@ -5,6 +5,30 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [0.8.0] — Phase 7 · Calendars and video visits
+
+### Added (API)
+- **Google Calendar (two-way, physios)**: connect with Google sign-in; every `CALENDAR_SYNC_MINUTES` the physio's
+  Google busy times block those PhysioCare slots, and PhysioCare visits are added to their Google Calendar
+  (patient's first name and area only), updated when they change and removed when cancelled. Needs
+  `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`; until then the app shows "not available yet".
+- **Calendly (physios)**: connect with a personal access token; bookings made in Calendly block those times
+  (instantly through a signed webhook on paid Calendly plans, otherwise on the regular sync).
+- Tokens are encrypted at rest (AES-256-GCM, `CALENDAR_TOKEN_KEY`). Outside events only block time; their titles and
+  attendees are never read. Expired Google access is marked "Reconnect needed".
+- **Private calendar feeds** for physios and patients (subscribe from Apple, Google or Outlook Calendar), with a
+  "make a new link" option; one-visit `.ics` download ("Add to calendar") for the people in that visit.
+- **Video visits** on Jitsi Meet (free, no accounts): a private room per visit, open from `VIDEO_JOIN_EARLY_MINUTES`
+  before the start to `VIDEO_JOIN_LATE_MINUTES` after the end, only for the patient and physio. The physio starts the
+  session (counts as check-in, no door code) and ends it with notes as usual; join times are recorded.
+- **Console calendar API**: every physio's week with visits, outside busy times and leave.
+
+### Added (apps)
+- **Physio app**: Calendar settings (Google, Calendly, status, check now, disconnect, subscribe link); video sessions
+  on the visit screen ("Start video session", "Rejoin"); no location sharing for video sessions.
+- **Website and patient app**: "Join video call", "Add to calendar", and "show my visits in my phone's calendar".
+- **Console**: Calendar (week view by physio, previous/next week, filter by physio).
+
 ## [0.7.0] — Phase 6 · Website and CMS · PhysioCare brand
 
 ### Brand

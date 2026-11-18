@@ -24,7 +24,7 @@ export default function VisitScreen() {
   // Location is shared only while on the way or in session, for safety.
   useEffect(() => {
     const live = status === 'on_the_way' || status === 'checked_in';
-    if (!live || !id) return;
+    if (!live || !id || v0?.mode === 'video') return;
     const ping = async () => {
       try {
         const perm = await Location.getForegroundPermissionsAsync();
@@ -50,6 +50,8 @@ export default function VisitScreen() {
     await act(() => api.onTheWay(id), 'on_the_way');
   }
   const needsFamily = v.physio_consent === 'accepted';
+  const isVideo = v.mode === 'video';
+  const openVideo = async () => { const r = await api.video(id); await Linking.openURL(r.url); };
 
   return (
     <Screen kicker={`${fmtDay(v.starts_at)} · ${fmtTime(v.starts_at)}`} title={v.patient_name ?? 'Patient'} sub={`${v.mode}${v.sessions_total && v.sessions_total > 1 ? ` · ${v.sessions_total}-session plan` : ''}`}>
@@ -60,9 +62,18 @@ export default function VisitScreen() {
         {v.lat != null && <Button title="Directions" variant="ghost" onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}`)} />}
       </Card>
 
-      {status === 'booked' && <Button title="I’m on the way" onPress={startTrip} busy={busy} />}
+      {isVideo && (status === 'booked' || status === 'checked_in') && (
+        <Card>
+          <Text style={s.h2}>Video session</Text>
+          <Text style={s.muted}>Opens {Number(process.env.EXPO_PUBLIC_VIDEO_JOIN_EARLY_MINUTES || 10)} minutes before the start. The patient joins from their bookings.</Text>
+          {status === 'booked' && <Button title="Start video session" busy={busy} onPress={() => act(async () => { await api.startVideo(id); await openVideo(); }, 'checked_in')} />}
+          {status === 'checked_in' && <Button title="Rejoin video call" variant="ghost" busy={busy} onPress={() => act(openVideo)} />}
+        </Card>
+      )}
 
-      {(status === 'booked' || status === 'on_the_way') && (
+      {!isVideo && status === 'booked' && <Button title="I’m on the way" onPress={startTrip} busy={busy} />}
+
+      {!isVideo && (status === 'booked' || status === 'on_the_way') && (
         <Card>
           <Text style={s.h2}>Check in</Text>
           <Text style={s.muted}>Ask the patient for their 4-digit code. The visit and payment start only with the right code.</Text>
@@ -98,7 +109,7 @@ export default function VisitScreen() {
       )}
       <ErrorText error={error} />
 
-      {(status === 'on_the_way' || status === 'checked_in') && (
+      {!isVideo && (status === 'on_the_way' || status === 'checked_in') && (
         <View style={{ gap: 8 }}>
           <Pressable accessibilityRole="button" accessibilityLabel="SOS. Hold to alert our safety team and your emergency contacts" delayLongPress={2000}
             onLongPress={() => sendSos(id).catch(e => setError(e instanceof ApiError ? e.message : 'SOS failed. Call 112.'))}
