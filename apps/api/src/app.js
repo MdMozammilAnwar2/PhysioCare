@@ -16,6 +16,7 @@ import { adminMoneyRouter, chatRouter, patientMoneyRouter, walletRouter } from '
 import { adminGrowthRouter, growthRouter, linkRouter, partnerRouter } from './routes/growth.js';
 import { controlRouter, personalBlocksRouter } from './routes/control.js';
 import { adminGrievanceRouter, grievanceRouter, publicRouter } from './routes/grievance.js';
+import { adminCmsRouter, publicCmsRouter, seoRouter } from './routes/cms.js';
 
 export function createApp() {
   const app = express();
@@ -37,6 +38,7 @@ export function createApp() {
   app.use('/api/v1/admin/money', adminMoneyRouter);
   app.use('/api/v1/admin/growth', adminGrowthRouter);
   app.use('/api/v1/admin/control', controlRouter);
+  app.use('/api/v1/admin/cms', adminCmsRouter);
   app.use('/api/v1/admin/grievances', adminGrievanceRouter);
   app.use('/api/v1/admin', adminRouter);
   app.use('/api/v1/therapist/wallet', walletRouter);
@@ -47,7 +49,8 @@ export function createApp() {
   app.use('/api/v1/zones', zonesRouter);
   app.use('/api/v1/files', filesRouter);
   app.use('/api/v1/growth', growthRouter);
-  app.use('/api/v1/public', cors({ origin: '*' }), publicRouter);
+  app.use('/api/v1/public', cors({ origin: '*' }), publicRouter, publicCmsRouter);
+  app.use('/', seoRouter); // /sitemap.xml and /robots.txt
   app.use('/api/v1/grievances', grievanceRouter);
   app.use('/api/v1/blocks', personalBlocksRouter);
   app.use('/api/v1/partner', partnerRouter);

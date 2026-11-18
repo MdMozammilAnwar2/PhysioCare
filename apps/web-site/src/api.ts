@@ -120,3 +120,20 @@ export const grievance = {
 
 export const rupees = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
+
+// ---------- Phase 6: website content (CMS) ----------
+export type SiteLink = { label: string; href: string };
+export type Site = { siteName: string; tagline: string; supportPhone: string; whatsapp: string; email: string; address: string; hours: string; announcement: { enabled: boolean; text: string; href: string }; nav: SiteLink[]; footer: { heading: string; links: SiteLink[] }[]; social: Record<string, string> };
+export type CmsBlock = { id: string; type: string; [k: string]: unknown };
+export type CmsPage = { slug: string; kind: string; title: string; summary: string | null; blocks: CmsBlock[]; seo: { title?: string; description?: string; imageFileId?: string; noindex?: boolean } | null; cover_file_id: string | null; published_at?: string };
+export type PageCard = { slug: string; kind: string; title: string; summary: string | null; cover_file_id: string | null; published_at: string };
+export type PublicPhysio = { id: string; name: string; gender: string | null; qualification: string | null; years_experience: number | null; bio: string | null; specialisations: string[]; languages: string[]; tier: string; rating: number | null; reviews: number; sessions: number; from_paise: number | null };
+export const cms = {
+  site: () => raw<{ site: Site }>('/public/site'),
+  page: (path: string) => raw<{ page: CmsPage }>(`/public/page?path=${encodeURIComponent(path)}`),
+  preview: (path: string) => raw<{ page: CmsPage }>(`/admin/cms/preview?path=${encodeURIComponent(path)}`),
+  pages: (kind: string, limit = 50) => raw<{ pages: PageCard[] }>(`/public/pages?kind=${kind}&limit=${limit}`),
+  physios: (limit = 24, speciality = '') => raw<{ physios: PublicPhysio[] }>(`/public/physios?limit=${limit}${speciality ? `&speciality=${encodeURIComponent(speciality)}` : ''}`),
+  physio: (id: string) => raw<{ physio: PublicPhysio; reviews: { stars: number; tags: string[]; comment: string; created_at: string; first_name: string }[] }>(`/public/physios/${id}`),
+};
+export const fileUrl = (id: string) => `/api/v1/files/${id}/content`;

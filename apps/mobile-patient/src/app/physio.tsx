@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError, draft, rupees, type Match } from '../lib/api';
-import { Button, C, Card, Check, ErrorText, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, Check, ErrorText, Screen, s } from '../lib/ui';
 
 export default function Physio() {
   const router = useRouter();
@@ -30,9 +30,9 @@ export default function Physio() {
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={s.h2}>{m.name}</Text>
               <Text style={s.muted}>{m.qualification} · {m.yearsExperience} yrs{m.distanceKm !== null ? ` · ${m.distanceKm} km` : ''}{m.rating ? ` · ★ ${m.rating}` : ''}</Text>
-              {m.requiresFamilyAndConsent && <Text style={{ color: C.amber, fontWeight: '600', fontSize: 13 }}>Needs your family member present and his consent</Text>}
+              {m.requiresFamilyAndConsent && <Text style={{ color: C.amber, fontFamily: F.w600, fontSize: 13 }}>Needs your family member present and his consent</Text>}
             </View>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: C.navy }}>{rupees(m.pricePaise)}</Text>
+            <Text style={{ fontSize: 20, fontFamily: F.w800, color: C.navy }}>{rupees(m.pricePaise)}</Text>
           </View>
           <Button title="Choose" variant={i === 0 ? 'primary' : 'ghost'} onPress={() => pick(m)} />
         </Card>

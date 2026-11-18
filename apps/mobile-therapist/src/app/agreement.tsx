@@ -6,7 +6,7 @@ import { Button, Card, Check, ErrorText, Field, Screen, s } from '../lib/ui';
 
 const POINTS = [
   ['Service agreement', 'Your price minus the platform fee and TDS; payouts after a 7-day hold.'],
-  ['Code of conduct', 'Respect, privacy, no off-app visits or payments outside PhysioConnect.'],
+  ['Code of conduct', 'Respect, privacy, no off-app visits or payments outside PhysioCare.'],
   ['Gender safety rule', 'A male physio visits a woman patient only with an adult family member present and both consents. If nobody is home, you leave and tap “Nobody present”.'],
   ['Strikes and blocking', 'Breaking the rules can lead to a warning, suspension or removal.'],
 ];

@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { api, ApiError, DOCS, type DocType, type Profile } from '../lib/api';
-import { Button, C, Card, ErrorText, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, ErrorText, Screen, s } from '../lib/ui';
 
 // Step 2 of 3: upload the six documents. Each one is stored permanently and reviewed by our team.
 export default function Documents() {
@@ -42,7 +42,7 @@ export default function Documents() {
           <Card key={type}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
               <View style={{ flex: 1 }}><Text style={s.h2}>{label}</Text><Text style={s.muted}>{hint}</Text></View>
-              <Text style={{ color, fontWeight: '700' }}>{text}</Text>
+              <Text style={{ color, fontFamily: F.w700 }}>{text}</Text>
             </View>
             {d?.status === 'rejected' && d.review_note ? <Text style={{ color: C.red }}>{d.review_note}</Text> : null}
             {d?.status !== 'approved' && <Button title={d ? 'Replace' : type === 'selfie' ? 'Take selfie' : 'Upload'} variant="ghost" onPress={() => upload(type)} busy={busy === type} />}

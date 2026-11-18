@@ -1,5 +1,5 @@
 // Constants shared by the API, web apps and mobile apps.
-export const APP_VERSION = '0.6.0';
+export const APP_VERSION = '0.7.0';
 
 // Roles. SUPER_ADMIN can only be created from the server environment (see apps/api/scripts/seed.js).
 export const ROLES = Object.freeze({
@@ -12,11 +12,12 @@ export const ROLES = Object.freeze({
   FINANCE: 'finance',
   CITY_COORDINATOR: 'city_coordinator',
   GRIEVANCE_COMMITTEE: 'grievance_committee',
+  CONTENT_EDITOR: 'content_editor',
   SUPER_ADMIN: 'super_admin',
 });
-export const ADMIN_ROLES = [ROLES.OPS_ADMIN, ROLES.FINANCE, ROLES.CITY_COORDINATOR, ROLES.GRIEVANCE_COMMITTEE, ROLES.SUPER_ADMIN];
+export const ADMIN_ROLES = [ROLES.OPS_ADMIN, ROLES.FINANCE, ROLES.CITY_COORDINATOR, ROLES.GRIEVANCE_COMMITTEE, ROLES.CONTENT_EDITOR, ROLES.SUPER_ADMIN];
 // Staff roles a super admin can give. Super admin itself is never given through the app.
-export const ASSIGNABLE_STAFF_ROLES = [ROLES.OPS_ADMIN, ROLES.FINANCE, ROLES.CITY_COORDINATOR, ROLES.GRIEVANCE_COMMITTEE];
+export const ASSIGNABLE_STAFF_ROLES = [ROLES.OPS_ADMIN, ROLES.FINANCE, ROLES.CITY_COORDINATOR, ROLES.GRIEVANCE_COMMITTEE, ROLES.CONTENT_EDITOR];
 // Roles a person may pick for themselves at sign-up.
 export const SELF_SERVE_ROLES = [ROLES.PATIENT, ROLES.THERAPIST, ROLES.PARTNER_OWNER];
 

@@ -73,7 +73,7 @@ export async function holdBooking({ patient, therapistId, start, mode, addressId
 
 export async function upiSettings() {
   const row = await one(`SELECT value FROM app_settings WHERE key = 'payment_upi'`, {});
-  return row?.value ?? { upiId: null, payeeName: 'PhysioConnect' };
+  return row?.value ?? { upiId: null, payeeName: 'PhysioCare' };
 }
 export const upiUri = ({ upiId, payeeName }, amountPaise, reference) =>
   `upi://pay?${new URLSearchParams({ pa: upiId, pn: payeeName, am: (amountPaise / 100).toFixed(2), cu: 'INR', tn: reference })}`;

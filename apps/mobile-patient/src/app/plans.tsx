@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { api, ApiError, rupees } from '../lib/api';
-import { Button, C, Card, ErrorText, Field, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, ErrorText, Field, Screen, s } from '../lib/ui';
 
 type Plan = Awaited<ReturnType<typeof api.plans>>['plans'][number];
 type Refund = Awaited<ReturnType<typeof api.refunds>>['refunds'][number];
@@ -44,9 +44,9 @@ export default function Plans() {
             <Text style={s.h2}>{p.therapist_name} · {p.sessions_total}-session plan</Text>
             <View style={{ height: 8, borderRadius: 4, backgroundColor: C.bg, overflow: 'hidden' }}><View style={{ height: 8, width: `${(100 * p.completed) / p.sessions_total}%`, backgroundColor: C.brand }} /></View>
             <Text style={s.muted}>{p.completed} of {p.sessions_total} done · {rupees(p.price_paise)} · {p.status}</Text>
-            {r && <Text style={{ fontWeight: '700', color: C.navy }}>{REFUND_STATUS[r.status] ?? r.status} · {rupees(r.amount_paise)}{r.note ? ` · ${r.note}` : ''}</Text>}
+            {r && <Text style={{ fontFamily: F.w700, color: C.navy }}>{REFUND_STATUS[r.status] ?? r.status} · {rupees(r.amount_paise)}{r.note ? ` · ${r.note}` : ''}</Text>}
             <Button title="Message physio" variant="ghost" onPress={() => router.push({ pathname: '/chat/[planId]', params: { planId: p.id } })} />
-            {canRefund && <Text accessibilityRole="link" onPress={() => api.refundEstimate(p.id).then(setEst).catch(fail)} style={{ color: C.sub, fontWeight: '700', textDecorationLine: 'underline' }}>Refund unused sessions</Text>}
+            {canRefund && <Text accessibilityRole="link" onPress={() => api.refundEstimate(p.id).then(setEst).catch(fail)} style={{ color: C.sub, fontFamily: F.w700, textDecorationLine: 'underline' }}>Refund unused sessions</Text>}
           </Card>
         );
       })}

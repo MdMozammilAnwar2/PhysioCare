@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { api, ApiError, fmtDay, rupees, type Wallet } from '../lib/api';
-import { C, Card, ErrorText, Screen, s } from '../lib/ui';
+import { F, C, Card, ErrorText, Screen, s } from '../lib/ui';
 
 const STATUS: Record<string, [string, string]> = {
   held: ['On hold', C.amber], available: ['Available', C.green], frozen: ['Frozen: report open', C.red],
@@ -17,7 +17,7 @@ export default function WalletScreen() {
   const tile = (label: string, paise: number, color: string = C.navy) => (
     <View style={{ flex: 1, minWidth: '45%', backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.line, padding: 14, gap: 4 }}>
       <Text style={s.muted}>{label}</Text>
-      <Text style={{ fontSize: 22, fontWeight: '800', color }}>{rupees(paise)}</Text>
+      <Text style={{ fontSize: 22, fontFamily: F.w800, color }}>{rupees(paise)}</Text>
     </View>
   );
   return (
@@ -31,7 +31,7 @@ export default function WalletScreen() {
             {tile('Paid to you', w.paidPaise)}
             {tile('TDS deducted', w.tdsThisYearPaise, C.sub)}
           </View>
-          {w.frozenPaise > 0 && <Card><Text style={{ color: C.red, fontWeight: '700' }}>{rupees(w.frozenPaise)} frozen while a patient report is reviewed. Our team will contact you.</Text></Card>}
+          {w.frozenPaise > 0 && <Card><Text style={{ color: C.red, fontFamily: F.w700 }}>{rupees(w.frozenPaise)} frozen while a patient report is reviewed. Our team will contact you.</Text></Card>}
 
           <Text style={s.h2}>Payouts</Text>
           {w.payouts.length === 0 && <Text style={s.muted}>No payouts yet.</Text>}
@@ -39,7 +39,7 @@ export default function WalletScreen() {
             <Card key={p.id}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={s.h2}>{rupees(p.amount_paise)}</Text>
-                <Text style={{ fontWeight: '700', color: p.status === 'paid' ? C.green : C.amber }}>{p.status === 'paid' ? 'Paid' : 'Being sent'}</Text>
+                <Text style={{ fontFamily: F.w700, color: p.status === 'paid' ? C.green : C.amber }}>{p.status === 'paid' ? 'Paid' : 'Being sent'}</Text>
               </View>
               <Text style={s.muted}>{p.status === 'paid' && p.paid_at ? `${fmtDay(p.paid_at)} · ${p.method?.toUpperCase()} · Ref ${p.reference}` : `Created ${fmtDay(p.created_at)}`}{p.tds_paise ? ` · TDS ${rupees(p.tds_paise)}` : ''}</Text>
             </Card>
@@ -52,11 +52,11 @@ export default function WalletScreen() {
             return (
               <Card key={e.id}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontWeight: '700', color: C.navy }}>{fmtDay(e.visit_at)} · {e.patient_name ?? 'Patient'}</Text>
-                  <Text style={{ fontWeight: '800', color: C.navy }}>{rupees(e.net_paise)}</Text>
+                  <Text style={{ fontFamily: F.w700, color: C.navy }}>{fmtDay(e.visit_at)} · {e.patient_name ?? 'Patient'}</Text>
+                  <Text style={{ fontFamily: F.w800, color: C.navy }}>{rupees(e.net_paise)}</Text>
                 </View>
                 <Text style={s.muted}>Price {rupees(e.gross_paise)} − fee {rupees(e.fee_paise)} − TDS {rupees(e.tds_paise)}</Text>
-                <Text style={{ fontWeight: '700', color }}>{label}{e.status === 'held' ? ` until ${fmtDay(e.available_at)}` : ''}</Text>
+                <Text style={{ fontFamily: F.w700, color }}>{label}{e.status === 'held' ? ` until ${fmtDay(e.available_at)}` : ''}</Text>
               </Card>
             );
           })}

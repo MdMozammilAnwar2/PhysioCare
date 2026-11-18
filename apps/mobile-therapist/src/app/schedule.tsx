@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { sendSos } from '../lib/sos';
 import { api, ApiError, fmtDay, fmtTime, tokens, visitsCache, type Visit } from '../lib/api';
-import { Button, C, Card, ErrorText, Screen, ZonePill, s } from '../lib/ui';
+import { F, Button, C, Card, ErrorText, Screen, ZonePill, s } from '../lib/ui';
 
 const STATUS: Record<string, [string, string]> = { booked: ['Booked', C.sub], on_the_way: ['On the way', C.brand], checked_in: ['In session', C.green], completed: ['Done', C.green], cancelled: ['Cancelled', C.red], no_show: ['No-show', C.red] };
 
@@ -53,7 +53,7 @@ export default function Schedule() {
             <Card>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={s.h2}>{fmtDay(v.starts_at)} · {fmtTime(v.starts_at)}</Text>
-                <Text style={{ color, fontWeight: '700' }}>{label}</Text>
+                <Text style={{ color, fontFamily: F.w700 }}>{label}</Text>
               </View>
               <Text style={s.body}>{v.patient_name ?? 'Patient'} · {v.mode}{v.sessions_total && v.sessions_total > 1 ? ` · ${v.sessions_total}-session plan` : ''}</Text>
               {v.zone_color ? <ZonePill color={v.zone_color} name={v.zone_name} /> : null}
@@ -63,7 +63,7 @@ export default function Schedule() {
       })}
       <Pressable accessibilityRole="button" accessibilityLabel="SOS. Alerts our safety team" onLongPress={() => sendSos().catch(e => setError(e instanceof ApiError ? e.message : 'SOS failed. Call 112.'))} delayLongPress={1500}
         style={{ backgroundColor: '#F43F5E', borderRadius: 16, minHeight: 56, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 18 }}>Hold for SOS</Text>
+        <Text style={{ color: '#fff', fontFamily: F.w800, fontSize: 18 }}>Hold for SOS</Text>
       </Pressable>
       <Button title="Sign out" variant="ghost" onPress={async () => { await tokens.clear(); router.replace('/'); }} />
     </Screen>

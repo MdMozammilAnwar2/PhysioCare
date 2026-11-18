@@ -27,7 +27,7 @@ export default function SignIn() {
           : <Field label="6-digit code" value={code} onChangeText={t => setCode(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" autoComplete="sms-otp" textContentType="oneTimeCode" />}
         <ErrorText error={error} />
         <Button title={step === 'phone' ? 'Send code' : 'Verify'} onPress={next} busy={busy} />
-        <Text style={s.muted}>Patients never see your number. Calls and chats go through PhysioConnect.</Text>
+        <Text style={s.muted}>Patients never see your number. Calls and chats go through PhysioCare.</Text>
       </Card>
     </Screen>
   );

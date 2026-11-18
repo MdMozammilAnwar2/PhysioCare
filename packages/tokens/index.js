@@ -1,16 +1,21 @@
-// Style A · Clean Blue — the single source of design tokens for web and mobile.
+// PhysioCare brand (Care Cross in Motion) — the single source of design tokens for web and mobile.
+// Indigo #5146D9 primary · Lavender #8B7FF0 motion arm · Ink #1F1A4D wordmark · Mist #EFEDFD backgrounds.
 export const colors = {
-  brand: '#0A6CFF', // actions, links, active states
-  brandDark: '#0757D6',
-  navy: '#0A1F44', // text, sidebars, dark buttons
-  ink: '#0A1F44',
-  sub: '#5B6B86', // secondary text
-  muted: '#8090A8',
-  line: '#E3E9F3', // borders, separators
-  bg: '#F3F6FC', // app canvas
+  brand: '#5146D9', // actions, links, active states
+  brandDark: '#4038B8',
+  navy: '#1F1A4D', // text, sidebars, dark buttons
+  ink: '#1F1A4D',
+  sub: '#5E5A7A', // secondary text
+  muted: '#8C88A6',
+  line: '#E4E1F5', // borders, separators
+  bg: '#F7F6FC', // app canvas
   surface: '#FFFFFF',
-  soft: '#E8F0FF', // tinted backgrounds
-  violet: '#7B61FF', // accent
+  soft: '#EFEDFD', // tinted backgrounds
+  violet: '#8B7FF0', // lavender accent (motion arm)
+  lavender: '#8B7FF0',
+  lavenderLight: '#C9C3F7', // motion arm on indigo
+  lavenderOnDark: '#A99FF5', // mark on ink
+  mist: '#EFEDFD',
   teal: '#14B8A6',
   success: '#10B981',
   successInk: '#047857',
@@ -21,7 +26,7 @@ export const colors = {
 };
 
 export const gradients = {
-  hero: 'linear-gradient(155deg, #0A6CFF 0%, #4B8BFF 45%, #A68BFF 100%)',
+  hero: 'linear-gradient(155deg, #5146D9 0%, #6A5FE6 50%, #8B7FF0 100%)',
 };
 
 // Zone colours mean service status; they must always be shown with a label.
@@ -34,7 +39,7 @@ export const zoneColors = {
 };
 
 export const font = {
-  family: "Manrope, 'Helvetica Neue', Arial, sans-serif",
+  family: "'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif",
   weights: { regular: 400, medium: 500, semibold: 600, bold: 700, heavy: 800 },
   sizes: { caption: 12, footnote: 13, body: 15, bodyLg: 17, title3: 20, title2: 24, title1: 28, large: 34, display: 72 },
 };

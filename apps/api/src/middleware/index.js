@@ -4,7 +4,7 @@ import { HttpError } from '../lib/util.js';
 import { verifyAccessToken } from '../services/tokens.js';
 import { expireBlocks } from '../services/blocks.js';
 
-const ROLE_ORDER = ['super_admin', 'ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'therapist', 'partner_owner', 'partner_staff', 'partner_wallet', 'patient'];
+const ROLE_ORDER = ['super_admin', 'ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'content_editor', 'therapist', 'partner_owner', 'partner_staff', 'partner_wallet', 'patient'];
 export const primaryRole = roles => ROLE_ORDER.find(r => roles.includes(r)) ?? roles[0];
 
 export const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);

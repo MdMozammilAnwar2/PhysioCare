@@ -1,6 +1,6 @@
-import { colors, font, radius } from './index.js';
+import { colors, font, gradients, radius } from './index.js';
 
-// Tailwind preset so every web app uses the same Style A tokens.
+// Tailwind preset so every web app uses the same PhysioCare brand tokens.
 export default {
   theme: {
     extend: {
@@ -13,6 +13,8 @@ export default {
         line: colors.line,
         canvas: colors.bg,
         violet: colors.violet,
+        lavender: { DEFAULT: colors.lavender, light: colors.lavenderLight, dark: colors.lavenderOnDark },
+        mist: colors.mist,
         teal: colors.teal,
         success: { DEFAULT: colors.success, ink: colors.successInk },
         warning: { DEFAULT: colors.warning, ink: colors.warningInk },
@@ -20,7 +22,7 @@ export default {
       },
       fontFamily: { sans: font.family.split(',').map(s => s.trim().replace(/'/g, '')) },
       borderRadius: { card: `${radius.xl}px`, hero: `${radius.xxl}px` },
-      backgroundImage: { hero: 'linear-gradient(155deg, #0A6CFF 0%, #4B8BFF 45%, #A68BFF 100%)' },
+      backgroundImage: { hero: gradients.hero },
     },
   },
 };

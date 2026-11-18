@@ -14,6 +14,8 @@ const one = async (sql, replacements, transaction) => (await q(sql, replacements
 const notify = (u, type, title, body, data, transaction) => q(`INSERT INTO notifications (user_id, type, title, body, data) VALUES (:u, :type, :title, :body, :data)`,
   { u, type, title, body: body ?? null, data: JSON.stringify(data ?? {}) }, transaction);
 const phoneField = z.string().transform((v, ctx) => normalizeIndianPhone(v) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a valid Indian mobile number.' }), z.NEVER));
+// Staff who may see people and operations data. Content editors only manage the website.
+const PEOPLE_ROLES = ADMIN_ROLES.filter(r => r !== 'content_editor');
 const isSuper = req => req.user.roles.includes('super_admin');
 
 export const BLOCK_REASONS = ['fraud', 'abuse', 'harassment', 'safety', 'no_show_repeat', 'payment_default', 'fake_documents', 'off_platform', 'spam', 'legal', 'other'];
@@ -24,7 +26,7 @@ const staff = requireRole('ops_admin', 'city_coordinator', 'super_admin');
 const superOnly = requireRole('super_admin');
 
 // ---------- users and blocks ----------
-controlRouter.get('/users', requireRole(...ADMIN_ROLES), asyncHandler(async (req, res) => {
+controlRouter.get('/users', requireRole(...PEOPLE_ROLES), asyncHandler(async (req, res) => {
   const term = String(req.query.q ?? '').trim();
   const role = String(req.query.role ?? '');
   const status = String(req.query.status ?? '');
@@ -40,7 +42,7 @@ controlRouter.get('/users', requireRole(...ADMIN_ROLES), asyncHandler(async (req
   res.json({ users });
 }));
 
-controlRouter.get('/users/:id', requireRole(...ADMIN_ROLES), asyncHandler(async (req, res) => {
+controlRouter.get('/users/:id', requireRole(...PEOPLE_ROLES), asyncHandler(async (req, res) => {
   const u = await one(`SELECT id, name, phone, gender, status, created_at, last_login_at FROM users WHERE id = :id`, { id: req.params.id });
   if (!u) throw new HttpError(404, 'not_found', 'User not found.');
   const [roles, blocks, personal, visits] = await Promise.all([
@@ -90,7 +92,7 @@ controlRouter.post('/users/:id/unblock', staff, validate(z.object({ note: z.stri
   res.json({ status: 'active' });
 }));
 
-controlRouter.get('/blocks', requireRole(...ADMIN_ROLES), asyncHandler(async (req, res) => {
+controlRouter.get('/blocks', requireRole(...PEOPLE_ROLES), asyncHandler(async (req, res) => {
   const active = req.query.active !== '0';
   res.json({ blocks: await q(`SELECT b.id, b.user_id, u.name, u.phone, b.reason_code, b.note, b.ends_at, b.until_review, b.created_at, b.lifted_at, b.lift_note, bu.name AS blocked_by_name,
       COALESCE((SELECT array_agg(role::text) FROM user_roles r WHERE r.user_id = u.id), '{}') AS roles
@@ -99,7 +101,7 @@ controlRouter.get('/blocks', requireRole(...ADMIN_ROLES), asyncHandler(async (re
 }));
 
 // Personal blocks (physio ↔ patient), for review.
-controlRouter.get('/personal-blocks', requireRole(...ADMIN_ROLES), asyncHandler(async (_req, res) => {
+controlRouter.get('/personal-blocks', requireRole(...PEOPLE_ROLES), asyncHandler(async (_req, res) => {
   res.json({ blocks: await q(`SELECT pb.blocker_id, pb.blocked_id, pb.reason_code, pb.note, pb.created_at, a.name AS blocker_name, a.phone AS blocker_phone, b.name AS blocked_name, b.phone AS blocked_phone
     FROM personal_blocks pb JOIN users a ON a.id = pb.blocker_id JOIN users b ON b.id = pb.blocked_id ORDER BY pb.created_at DESC LIMIT 200`) });
 }));
@@ -132,7 +134,7 @@ controlRouter.delete('/staff/:id/roles/:role', superOnly, asyncHandler(async (re
 
 // ---------- zones ----------
 const ZONE_COLORS = ['green', 'blue', 'yellow', 'orange', 'red'];
-controlRouter.get('/zones', requireRole(...ADMIN_ROLES), asyncHandler(async (_req, res) => {
+controlRouter.get('/zones', requireRole(...PEOPLE_ROLES), asyncHandler(async (_req, res) => {
   const zones = await q(`SELECT z.id, z.name, z.color, z.reason, z.review_on, z.center_lat, z.center_lng, z.radius_km::float AS radius_km, z.updated_at, c.name AS city, c.id AS city_id,
       (SELECT count(*)::int FROM visits v WHERE v.zone_id = z.id AND lower(v.during) >= now() AND v.status IN ('booked', 'on_the_way', 'checked_in')) AS upcoming
     FROM zones z JOIN cities c ON c.id = z.city_id ORDER BY c.name, z.name`);
@@ -172,12 +174,12 @@ controlRouter.patch('/zones/:id', staff, validate(z.object({
   });
   res.json({ ok: true });
 }));
-controlRouter.get('/zones/:id/history', requireRole(...ADMIN_ROLES), asyncHandler(async (req, res) => {
+controlRouter.get('/zones/:id/history', requireRole(...PEOPLE_ROLES), asyncHandler(async (req, res) => {
   res.json({ changes: await q(`SELECT zc.from_color, zc.to_color, zc.reason, zc.created_at, u.name AS changed_by FROM zone_changes zc LEFT JOIN users u ON u.id = zc.changed_by WHERE zc.zone_id = :id ORDER BY zc.created_at DESC`, { id: req.params.id }) });
 }));
 
 // ---------- platform settings (super admin) ----------
-controlRouter.get('/settings', requireRole(...ADMIN_ROLES), asyncHandler(async (_req, res) => {
+controlRouter.get('/settings', requireRole(...PEOPLE_ROLES), asyncHandler(async (_req, res) => {
   const rows = await q(`SELECT key, value, updated_at FROM app_settings WHERE key IN ('maintenance', 'min_app_version')`);
   res.json({ ...Object.fromEntries(rows.map(r => [r.key, r.value])), scheduling: await schedulingRules() });
 }));

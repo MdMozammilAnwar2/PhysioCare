@@ -4,7 +4,7 @@ import { api, ApiError, growth, isSignedIn, rupees, type CoinWallet, type Partne
 import { Button, Card, ErrorText, Field, Page } from './ui';
 
 const msg = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
-const REASON: Record<string, string> = { welcome: 'Welcome bonus', referral: 'Friend’s first visit', redeem: 'Used on a booking', redeem_return: 'Booking cancelled, coins back', refund_return: 'Refund, coins back', adjust: 'From PhysioConnect' };
+const REASON: Record<string, string> = { welcome: 'Welcome bonus', referral: 'Friend’s first visit', redeem: 'Used on a booking', redeem_return: 'Booking cancelled, coins back', refund_return: 'Refund, coins back', adjust: 'From PhysioCare' };
 const day = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' });
 
 // Patient: coin balance and history, own referral link.
@@ -16,7 +16,7 @@ export function Rewards() {
   useEffect(() => { Promise.all([growth.coins(), growth.referral()]).then(([a, b]) => { setW(a); setR(b); }).catch(e => setError(msg(e))); }, []);
   async function share() {
     if (!r) return;
-    if (navigator.share) { await navigator.share({ title: 'PhysioConnect', text: r.shareText }).catch(() => undefined); return; }
+    if (navigator.share) { await navigator.share({ title: 'PhysioCare', text: r.shareText }).catch(() => undefined); return; }
     await navigator.clipboard.writeText(r.shareText); setCopied(true);
   }
   return (
@@ -70,7 +70,7 @@ function QrCard({ l }: { l: NonNullable<PartnerMe['links']>[number] }) {
         <p className="font-extrabold text-base">{label}</p>
         <p className="font-mono">{l.code}</p>
         <p className="text-sub">{l.scans} scans · {l.signups} joined · {l.paid} booked</p>
-        {src && <a href={src} download={`PhysioConnect-${label}.png`} className="text-brand font-bold">Download to print</a>}
+        {src && <a href={src} download={`PhysioCare-${label}.png`} className="text-brand font-bold">Download to print</a>}
         <button onClick={() => navigator.clipboard.writeText(l.url)} className="text-left text-brand font-bold">Copy link</button>
       </div>
     </Card>
@@ -90,7 +90,7 @@ export function PartnerPortal() {
   const act = async (fn: () => Promise<unknown>) => { setError(null); setBusy(true); try { await fn(); load(); } catch (e) { setError(msg(e)); } finally { setBusy(false); } };
 
   if (!isSignedIn()) return (
-    <Page kicker="For doctors, hospitals, labs and clinics" title="Refer patients to PhysioConnect" sub="Get your own QR code. Patients scan it to book verified physiotherapy at home, and you earn for every new patient’s first visit.">
+    <Page kicker="For doctors, hospitals, labs and clinics" title="Refer patients to PhysioCare" sub="Get your own QR code. Patients scan it to book verified physiotherapy at home, and you earn for every new patient’s first visit.">
       <Card className="flex flex-col gap-3">
         <ul className="list-disc pl-5 text-sub flex flex-col gap-1"><li>Free to join; approved by our team within 2 working days</li><li>Print your QR for the reception, discharge papers or prescriptions</li><li>See scans, sign-ups and bookings live</li><li>Rewards paid to your UPI or bank account</li></ul>
         <Link to="/signin?as=partner&next=/partner" className="min-h-12 rounded-xl bg-brand text-white font-bold inline-flex items-center justify-center">Sign in with your mobile number</Link>

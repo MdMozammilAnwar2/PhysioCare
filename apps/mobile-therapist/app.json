@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "PhysioConnect Partner",
+    "name": "PhysioCare Partner",
     "slug": "physioconnect-therapist",
     "scheme": "physioconnect-partner",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,9 +14,19 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "PhysioConnect uses your location only during a visit, for your safety and to show the patient you are on the way."
+          "locationWhenInUsePermission": "PhysioCare uses your location only during a visit, for your safety and to show the patient you are on the way."
         }
-      ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#1F1A4D"
+        }
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": false
@@ -28,7 +38,7 @@
     "android": {
       "package": "in.healthtropic.physioconnect.partner",
       "adaptiveIcon": {
-        "backgroundColor": "#0A6CFF",
+        "backgroundColor": "#1F1A4D",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -37,6 +47,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "primaryColor": "#5146D9"
   }
 }

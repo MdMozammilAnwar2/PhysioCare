@@ -160,4 +160,33 @@ export const grievances = {
   escalate: (id: string, reason: string) => post(`${G}/${id}/escalate`, { reason }),
   resolve: (id: string, resolution: string, reject = false) => post(`${G}/${id}/resolve`, { resolution, reject }),
 };
-export const ROLE_LABEL: Record<string, string> = { patient: 'Patient', therapist: 'Physio', partner_owner: 'Partner', partner_staff: 'Partner staff', partner_wallet: 'Partner wallet', ops_admin: 'Ops admin', finance: 'Finance', city_coordinator: 'City coordinator', grievance_committee: 'Grievance committee', super_admin: 'Super admin' };
+export const ROLE_LABEL: Record<string, string> = { patient: 'Patient', therapist: 'Physio', partner_owner: 'Partner', partner_staff: 'Partner staff', partner_wallet: 'Partner wallet', ops_admin: 'Ops admin', finance: 'Finance', city_coordinator: 'City coordinator', grievance_committee: 'Grievance committee', content_editor: 'Content editor', super_admin: 'Super admin' };
+
+// ---------- Phase 6: website CMS ----------
+export type CmsPageRow = { id: string; slug: string; kind: string; title: string; status: string; published_at: string | null; updated_at: string; sort_order: number; updated_by_name: string | null; unpublished_changes: boolean };
+export type CmsBlock = { id: string; type: string; [k: string]: unknown };
+export type CmsPageFull = { id: string; slug: string; kind: string; title: string; summary: string | null; blocks: CmsBlock[]; seo: { title?: string; description?: string; imageFileId?: string; noindex?: boolean }; status: string; sort_order: number; cover_file_id: string | null; published_at: string | null };
+export type SiteSettings = { siteName: string; tagline: string; supportPhone: string; whatsapp: string; email: string; address: string; hours: string; announcement: { enabled: boolean; text: string; href: string }; nav: { label: string; href: string }[]; footer: { heading: string; links: { label: string; href: string }[] }[]; social: { facebook: string; instagram: string; youtube: string; linkedin: string } };
+const M = '/admin/cms';
+export const cmsApi = {
+  meta: () => call<{ siteUrl: string }>(`${M}/meta`),
+  pages: (kind?: string) => call<{ pages: CmsPageRow[] }>(`${M}/pages${kind ? `?kind=${kind}` : ''}`),
+  page: (id: string) => call<{ page: CmsPageFull; revisions: { id: number; action: string; created_at: string; by_name: string | null }[] }>(`${M}/pages/${id}`),
+  create: (b: Record<string, unknown>) => post<{ id: string }>(`${M}/pages`, b),
+  save: (id: string, b: Record<string, unknown>) => call(`${M}/pages/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  publish: (id: string) => post(`${M}/pages/${id}/publish`),
+  unpublish: (id: string) => post(`${M}/pages/${id}/unpublish`),
+  restore: (id: string, rev: number) => post(`${M}/pages/${id}/restore/${rev}`),
+  archive: (id: string) => call(`${M}/pages/${id}`, { method: 'DELETE' }),
+  site: () => call<{ site: SiteSettings }>(`${M}/site`),
+  saveSite: (s: SiteSettings) => call<{ site: SiteSettings }>(`${M}/site`, { method: 'PUT', body: JSON.stringify(s) }),
+  // Public website image or video → the file store (kept permanently).
+  upload: async (file: File) => {
+    const fd = new FormData(); fd.append('purpose', 'website_media'); fd.append('visibility', 'public'); fd.append('file', file);
+    const res = await fetch('/api/v1/files', { method: 'POST', body: fd, headers: authHeader() });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, body.error?.code ?? 'error', body.error?.message ?? 'Upload failed.');
+    return body.file as { id: string; name: string };
+  },
+};
+export const publicFileUrl = (id: string) => `/api/v1/files/${id}/content`;

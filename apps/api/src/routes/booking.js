@@ -110,7 +110,7 @@ paymentsRouter.get('/:id/qr.png', asyncHandler(async (req, res) => {
   const p = await paymentFor(req);
   const upi = await upiSettings();
   if (p.method !== 'upi' || !upi.upiId) throw new HttpError(404, 'not_found', 'No UPI QR for this payment.');
-  const png = await QRCode.toBuffer(upiUri(upi, p.amount_paise, p.reference), { width: 480, margin: 2, color: { dark: '#0A1F44', light: '#FFFFFF' } });
+  const png = await QRCode.toBuffer(upiUri(upi, p.amount_paise, p.reference), { width: 480, margin: 2, color: { dark: '#1F1A4D', light: '#FFFFFF' } });
   res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'private, no-store' }).send(png);
 }));
 

@@ -5,6 +5,45 @@ All apps and the API share one version number, following [Semantic Versioning](h
 - `0.x` — building towards launch; each phase is a minor version.
 - `1.0.0` — public launch in Patna.
 
+## [0.7.0] — Phase 6 · Website and CMS · PhysioCare brand
+
+### Brand
+- **Renamed to PhysioCare by Healthtropic** everywhere users see it (website, console, apps, SMS-facing text, QR share
+  text, starter content). The physio app is **PhysioCare Partner**. Internal package and database names are unchanged.
+- **Logo "Care Cross in Motion"** drawn as SVG (`packages/tokens/brand.js`) with the four approved versions
+  (full colour, reversed on Indigo, on dark, one colour). `npm run brand` regenerates every file from it:
+  website and console favicons (SVG + 16/32 px with thicker strokes), Apple touch icon, PWA icons and manifests;
+  patient app icon on Indigo and Partner app icon on Ink, Android adaptive foreground (inside the 66% safe zone),
+  background and monochrome icons, splash screens, in-app marks.
+- **Colours**: Indigo #5146D9 (primary), Lavender #8B7FF0, Ink #1F1A4D (text, dark surfaces), Mist #EFEDFD, applied
+  through the shared tokens to both web apps, both mobile apps and the QR codes.
+- **Font**: Plus Jakarta Sans on the website, console and both apps (apps load it before the splash screen hides).
+- Logo in the website header and dark footer, console sidebar and sign-in, and the apps' welcome screens.
+
+### Added (API)
+- **Website CMS**: pages built from blocks (hero, text with simple formatting, image, video/YouTube, cards, steps,
+  numbers, FAQ, testimonials, call to action, notice, and live lists of physios, service areas, pages and the
+  Grievance Officer). Draft → publish (visitors only see published content), every save kept as a version and
+  restorable, take offline, archive (super admin). Addresses used by the app can't be taken by pages.
+- **Site settings**: name, tagline, support phone, WhatsApp, email, hours, address, announcement bar, header menu,
+  footer columns, social links (starting values from `SITE_*` in `.env`).
+- Public: `GET /api/v1/public/site`, `/public/page?path=`, `/public/pages?kind=`, `/public/physios` and
+  `/public/physios/:id` (verified physios only; never phone, address or location), `/sitemap.xml`, `/robots.txt`.
+- New **content editor** staff role (website only; no access to people or money data).
+- Starter website (28 pages, published by `npm run api:seed` when missing): home, services and 7 service pages,
+  conditions and 8 condition pages, how it works, about, FAQ, Patna, join as a physio, blog, and legal drafts
+  (terms, privacy, refunds & cancellation, patient consent) marked **for legal review**.
+
+### Added (apps)
+- **Website**: every page now comes from the CMS (home included); physio directory with filters and profiles with
+  reviews; menu from site settings with a mobile menu; announcement bar; footer with contact details and links;
+  page titles, descriptions, social preview images and canonical links; draft preview for staff (`/preview`).
+- **Console**: Website pages (list, editor with forms generated from the block definitions, image/video upload,
+  search preview, versions) and Website settings.
+
+### Fixed
+- Photo attachments on "Report a problem" and complaints were refused by the file store (unknown purpose).
+
 ## [0.6.0] — Phase 5 · Control: super admin, blocks, zones, grievances
 
 ### Configuration

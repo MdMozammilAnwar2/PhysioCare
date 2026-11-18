@@ -4,7 +4,7 @@ import { sequelize } from './db/index.js';
 
 const app = createApp();
 const server = app.listen(config.port, () => {
-  console.log(`PhysioConnect API v${config.version} listening on http://localhost:${config.port} (${config.env})`);
+  console.log(`PhysioCare API v${config.version} listening on http://localhost:${config.port} (${config.env})`);
 });
 
 async function shutdown() {

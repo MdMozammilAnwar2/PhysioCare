@@ -1,7 +1,11 @@
 {
   "name": "@physioconnect/shared",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "main": "index.js"
+  "main": "index.js",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./index.js" },
+    "./cms": { "types": "./cms.d.ts", "default": "./cms.js" }
+  }
 }

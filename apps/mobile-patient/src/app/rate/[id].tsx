@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, ApiError } from '../../lib/api';
-import { Button, C, Card, ErrorText, Screen, s } from '../../lib/ui';
+import { F, Button, C, Card, ErrorText, Screen, s } from '../../lib/ui';
 
 const TAGS: [string, string][] = [['on_time', 'On time'], ['explained_clearly', 'Explained clearly'], ['respectful', 'Respectful'], ['felt_better', 'I feel better'], ['too_rushed', 'Too rushed'], ['late', 'Came late']];
 
@@ -35,7 +35,7 @@ export default function Rate() {
             return (
               <Pressable key={v} onPress={() => setTags(x => (on ? x.filter(y => y !== v) : [...x, v]))} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
                 style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: 22, justifyContent: 'center', backgroundColor: on ? C.navy : C.white, borderWidth: 1, borderColor: on ? C.navy : C.line }}>
-                <Text style={{ color: on ? C.white : C.navy, fontWeight: '700' }}>{l}</Text>
+                <Text style={{ color: on ? C.white : C.navy, fontFamily: F.w700 }}>{l}</Text>
               </Pressable>
             );
           })}

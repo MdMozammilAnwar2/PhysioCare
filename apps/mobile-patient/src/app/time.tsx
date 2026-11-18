@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { api, ApiError, draft, fmtDay, fmtTime, istYmd, rupees } from '../lib/api';
-import { Button, C, Card, Check, ErrorText, Field, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, Check, ErrorText, Field, Screen, s } from '../lib/ui';
 
 type Pkg = { id: string; name: string; mode: string; sessions: number; price_paise: number };
 
@@ -54,7 +54,7 @@ export default function Time() {
           {days.map(d => (
             <Pressable key={d} onPress={() => setDay(d)} accessibilityRole="button" accessibilityState={{ selected: d === day }}
               style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: 12, justifyContent: 'center', backgroundColor: d === day ? C.navy : C.white, borderWidth: 1, borderColor: C.line }}>
-              <Text style={{ color: d === day ? C.white : C.navy, fontWeight: '700' }}>{fmtDay(`${d}T12:00:00+05:30`)}</Text>
+              <Text style={{ color: d === day ? C.white : C.navy, fontFamily: F.w700 }}>{fmtDay(`${d}T12:00:00+05:30`)}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -63,7 +63,7 @@ export default function Time() {
             {slots.map(t => (
               <Pressable key={t} onPress={() => setSlot(t)} accessibilityRole="button" accessibilityState={{ selected: t === slot }}
                 style={{ minHeight: 44, minWidth: 92, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: t === slot ? C.brand : C.white, borderWidth: 1, borderColor: C.line }}>
-                <Text style={{ color: t === slot ? C.white : C.navy, fontWeight: '700' }}>{fmtTime(t)}</Text>
+                <Text style={{ color: t === slot ? C.white : C.navy, fontFamily: F.w700 }}>{fmtTime(t)}</Text>
               </Pressable>
             ))}
           </View>
@@ -84,7 +84,7 @@ export default function Time() {
         </Card>
       )}
       <Card>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.h2}>Total</Text><Text style={[s.h2, { fontWeight: '800' }]}>{rupees(amount)}</Text></View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={s.h2}>Total</Text><Text style={[s.h2, { fontFamily: F.w800 }]}>{rupees(amount)}</Text></View>
         <ErrorText error={error} />
         <Button title="Continue to payment" variant="dark" onPress={pay} busy={busy} disabled={!slot} />
         <Text style={s.muted}>Pay by UPI (scan our QR) or in cash at the visit. Your slot is held for 10 minutes.</Text>
@@ -96,7 +96,7 @@ export default function Time() {
 const PlanRow = ({ on, onPress, title, sub, price }: { on: boolean; onPress: () => void; title: string; sub: string; price: number }) => (
   <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ selected: on }}
     style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 16, borderWidth: on ? 2 : 1, borderColor: on ? C.brand : C.line, backgroundColor: on ? C.soft : C.white }}>
-    <View><Text style={{ fontWeight: '700', color: C.navy, fontSize: 16 }}>{title}</Text><Text style={s.muted}>{sub}</Text></View>
-    <Text style={{ fontWeight: '800', fontSize: 18, color: C.navy }}>{rupees(price)}</Text>
+    <View><Text style={{ fontFamily: F.w700, color: C.navy, fontSize: 16 }}>{title}</Text><Text style={s.muted}>{sub}</Text></View>
+    <Text style={{ fontFamily: F.w800, fontSize: 18, color: C.navy }}>{rupees(price)}</Text>
   </Pressable>
 );

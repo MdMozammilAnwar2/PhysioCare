@@ -35,7 +35,7 @@ filesRouter.post('/', requireAuth, (req, res, next) => upload.single('file')(req
   if (!f) throw new HttpError(400, 'file_missing', 'Attach a file in the "file" field.');
   try {
     const meta = z.object({
-      purpose: z.enum(['payment_proof', 'website_media', 'document', 'exercise_video', 'avatar', 'general']).default('general'),
+      purpose: z.enum(['payment_proof', 'website_media', 'document', 'exercise_video', 'avatar', 'incident', 'grievance', 'general']).default('general'),
       visibility: z.enum(['public', 'private']).default('private'),
       linkedType: z.string().max(32).optional(),
       linkedId: z.string().max(64).optional(),

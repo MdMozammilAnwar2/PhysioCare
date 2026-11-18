@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api, ApiError, fmtTime } from '../../lib/api';
-import { C, ErrorText, s } from '../../lib/ui';
+import { F, C, ErrorText, s } from '../../lib/ui';
 
 type Msg = { id: number; body: string; created_at: string; mine: boolean };
 
@@ -52,7 +52,7 @@ export default function Chat() {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput value={text} onChangeText={setText} maxLength={1000} placeholder="Type a message" accessibilityLabel="Message" style={{ flex: 1, minHeight: 48, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 14, backgroundColor: C.white }} />
           <Pressable onPress={send} accessibilityRole="button" style={{ minHeight: 48, paddingHorizontal: 18, borderRadius: 12, backgroundColor: C.brand, justifyContent: 'center' }}>
-            <Text style={{ color: C.white, fontWeight: '800' }}>Send</Text>
+            <Text style={{ color: C.white, fontFamily: F.w800 }}>Send</Text>
           </Pressable>
         </View>
       </View>

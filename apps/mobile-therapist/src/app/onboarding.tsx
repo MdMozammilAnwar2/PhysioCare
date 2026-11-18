@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../lib/api';
-import { Button, C, Card, Check, Chips, ErrorText, Field, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, Check, Chips, ErrorText, Field, Screen, s } from '../lib/ui';
 
 function Multi<T extends string>({ options, value, onChange }: { options: [T, string][]; value: T[]; onChange: (v: T[]) => void }) {
   return (
@@ -12,7 +12,7 @@ function Multi<T extends string>({ options, value, onChange }: { options: [T, st
         return (
           <Pressable key={v} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => onChange(on ? value.filter(x => x !== v) : [...value, v])}
             style={[s.chip, on ? { backgroundColor: C.navy } : { backgroundColor: C.white, borderWidth: 1, borderColor: C.line }]}>
-            <Text style={{ color: on ? C.white : C.navy, fontWeight: on ? '700' : '500', fontSize: 15 }}>{l}</Text>
+            <Text style={{ color: on ? C.white : C.navy, fontFamily: on ? F.w700 : F.w500, fontSize: 15 }}>{l}</Text>
           </Pressable>
         );
       })}
@@ -71,7 +71,7 @@ export default function Onboarding() {
           {zones.map(z => (
             <Pressable key={z.id} onPress={() => setBase(z.id)} accessibilityRole="button" accessibilityState={{ selected: base === z.id }}
               style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 12, backgroundColor: base === z.id ? C.navy : C.white, borderWidth: 1, borderColor: C.line }}>
-              <Text style={{ color: base === z.id ? C.white : C.navy, fontWeight: '600' }}>{z.name}</Text>
+              <Text style={{ color: base === z.id ? C.white : C.navy, fontFamily: F.w600 }}>{z.name}</Text>
             </Pressable>
           ))}
         </View>

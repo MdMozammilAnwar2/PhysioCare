@@ -100,7 +100,7 @@ export const config = {
     officerDesignation: str('GRIEVANCE_OFFICER_DESIGNATION', 'Grievance Officer'),
     officerEmail: str('GRIEVANCE_OFFICER_EMAIL', ''),
     officerPhone: str('GRIEVANCE_OFFICER_PHONE', ''),
-    address: str('GRIEVANCE_ADDRESS', 'PhysioConnect by Healthtropic, Patna, Bihar'),
+    address: str('GRIEVANCE_ADDRESS', 'PhysioCare by Healthtropic, Patna, Bihar'),
     workingHours: str('GRIEVANCE_HOURS', 'Mon–Sat, 10 AM–6 PM'),
     ackHours: num('GRIEVANCE_ACK_HOURS', 24),
     resolveDays: num('GRIEVANCE_RESOLVE_DAYS', 15),
@@ -122,6 +122,28 @@ export const config = {
       referrerCoins: num('REFERRER_COINS', 1000),
       maxCoinPct: num('MAX_COIN_PCT', 20),
       partnerRewardPaise: Math.round(num('PARTNER_REWARD_RUPEES', 100) * 100),
+    },
+    // Website contact details and links; edited later in the console under Website › Site settings.
+    site: {
+      siteName: str('SITE_NAME', 'PhysioCare by Healthtropic'),
+      tagline: str('SITE_TAGLINE', 'Verified physiotherapy at home in Patna'),
+      supportPhone: str('SITE_SUPPORT_PHONE', ''),
+      whatsapp: str('SITE_WHATSAPP', ''),
+      email: str('SITE_EMAIL', ''),
+      address: str('SITE_ADDRESS', 'Patna, Bihar'),
+      hours: str('SITE_HOURS', 'Every day, 7 AM–9 PM'),
+      announcement: { enabled: false, text: '', href: '' },
+      nav: [
+        { label: 'Services', href: '/services' }, { label: 'Conditions', href: '/conditions' }, { label: 'Physiotherapists', href: '/physios' },
+        { label: 'How it works', href: '/how-it-works' }, { label: 'FAQ', href: '/faq' },
+      ],
+      footer: [
+        { heading: 'PhysioCare', links: [{ label: 'About us', href: '/about' }, { label: 'How it works', href: '/how-it-works' }, { label: 'Blog', href: '/blog' }, { label: 'Patna', href: '/patna' }] },
+        { heading: 'For partners', links: [{ label: 'Doctors & hospitals', href: '/partner' }, { label: 'Join as a physiotherapist', href: '/join-as-physio' }] },
+        { heading: 'Help', links: [{ label: 'FAQ', href: '/faq' }, { label: 'Complaints & Grievance Officer', href: '/grievance' }, { label: 'Refunds & cancellation', href: '/legal/refunds' }] },
+        { heading: 'Legal', links: [{ label: 'Terms of use', href: '/legal/terms' }, { label: 'Privacy policy', href: '/legal/privacy' }, { label: 'Patient consent', href: '/legal/patient-consent' }] },
+      ],
+      social: { facebook: str('SITE_FACEBOOK', ''), instagram: str('SITE_INSTAGRAM', ''), youtube: str('SITE_YOUTUBE', ''), linkedin: str('SITE_LINKEDIN', '') },
     },
     maintenance: { enabled: bool('MAINTENANCE_ENABLED', false), message: str('MAINTENANCE_MESSAGE', '') || null },
     min_app_version: {

@@ -19,8 +19,8 @@ const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const phoneField = z.string().transform((v, ctx) => normalizeIndianPhone(v) ?? (ctx.addIssue({ code: 'custom', message: 'Enter a valid Indian mobile number.' }), z.NEVER));
 
 async function sendQr(res, code, label) {
-  const png = await QRCode.toBuffer(`${linkUrl(code)}?src=qr`, { width: 720, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#0A1F44', light: '#FFFFFF' } });
-  res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'private, max-age=300', 'Content-Disposition': `inline; filename="PhysioConnect-${label ?? code}.png"` }).send(png);
+  const png = await QRCode.toBuffer(`${linkUrl(code)}?src=qr`, { width: 720, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#1F1A4D', light: '#FFFFFF' } });
+  res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'private, max-age=300', 'Content-Disposition': `inline; filename="PhysioCare-${label ?? code}.png"` }).send(png);
 }
 
 // ---------- public: /r/:code (QR scan or shared link) → website with ?ref ----------
@@ -49,7 +49,7 @@ growthRouter.get('/referral', asyncHandler(async (req, res) => {
   const [stats] = await linkStats('l.id = :id', { id: link.id });
   const rules = await growthRules();
   res.json({
-    code: link.code, url: linkUrl(link.code), shareText: `I use PhysioConnect for physiotherapy at home in Patna. Join with my link and get ${rules.welcomeCoins} coins (₹${rules.welcomeCoins / COINS_PER_RUPEE}) off: ${linkUrl(link.code)}`,
+    code: link.code, url: linkUrl(link.code), shareText: `I use PhysioCare for physiotherapy at home in Patna. Join with my link and get ${rules.welcomeCoins} coins (₹${rules.welcomeCoins / COINS_PER_RUPEE}) off: ${linkUrl(link.code)}`,
     joined: stats?.signups ?? 0, booked: stats?.paid ?? 0, referrerCoins: rules.referrerCoins, welcomeCoins: rules.welcomeCoins, coinsPerRupee: COINS_PER_RUPEE,
   });
 }));

@@ -16,24 +16,6 @@ export function RequireAuth({ children }: { children: React.ReactElement }) {
 }
 
 // ---------- Home ----------
-export function Home() {
-  const loc = useLocation();
-  useEffect(() => captureAttribution(loc.search), [loc.search]);
-  return (
-    <section className="max-w-6xl mx-auto px-4 pt-4">
-      <div className="rounded-[32px] bg-hero text-white text-center px-6 py-24">
-        <span className="inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-bold">Now in Patna</span>
-        <h1 className="mt-6 mx-auto max-w-3xl text-5xl sm:text-7xl font-extrabold leading-[1.03] tracking-tight">Physiotherapy. At home. Near you.</h1>
-        <p className="mt-5 mx-auto max-w-xl text-lg sm:text-xl text-white/90">Verified physiotherapists matched to your home, your recovery and your choice of therapist.</p>
-        <div className="mt-8 flex flex-wrap gap-3 justify-center">
-          <Link to="/book" className="h-14 px-7 rounded-2xl bg-white text-navy font-bold flex items-center shadow-lg">Find a physiotherapist</Link>
-          <Link to="/signin" className="h-14 px-7 rounded-2xl border-[1.5px] border-white/70 font-bold flex items-center">I have a doctor’s code</Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ---------- Sign in (phone → OTP) ----------
 export function SignIn() {
   const nav = useNavigate();

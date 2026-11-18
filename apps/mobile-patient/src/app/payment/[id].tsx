@@ -3,7 +3,7 @@ import { Image, Linking, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { api, ApiError, rupees, type Payment } from '../../lib/api';
-import { Button, C, Card, ErrorText, Field, Screen, s } from '../../lib/ui';
+import { F, Button, C, Card, ErrorText, Field, Screen, s } from '../../lib/ui';
 
 const LABEL = { pending: 'Waiting for payment', submitted: 'Checking your payment', paid: 'Paid', rejected: 'Needs attention' } as const;
 
@@ -38,15 +38,15 @@ export default function PaymentScreen() {
   if (!p) return <Screen title="Payment"><ErrorText error={error} />{!error && <Text style={s.muted}>Loading…</Text>}</Screen>;
   return (
     <Screen kicker={isNew ? 'You’re booked' : 'Payment'} title={`${rupees(p.amountPaise)} · ${LABEL[p.status]}`} sub={`Reference ${p.reference}`}>
-      {p.status === 'paid' && <Card><Text style={{ color: C.green, fontWeight: '700' }}>Payment confirmed. Invoice {p.invoiceNo}.</Text></Card>}
-      {p.status === 'rejected' && <Card><Text style={{ color: C.red, fontWeight: '700' }}>We couldn’t confirm this payment.</Text><Text style={s.muted}>{p.reviewNote}</Text></Card>}
+      {p.status === 'paid' && <Card><Text style={{ color: C.green, fontFamily: F.w700 }}>Payment confirmed. Invoice {p.invoiceNo}.</Text></Card>}
+      {p.status === 'rejected' && <Card><Text style={{ color: C.red, fontFamily: F.w700 }}>We couldn’t confirm this payment.</Text><Text style={s.muted}>{p.reviewNote}</Text></Card>}
       {p.method === 'cash' && p.status !== 'paid' && <Card><Text style={s.h2}>Pay {rupees(p.amountPaise)} in cash to your physio at the visit.</Text><Text style={s.muted}>They’ll mark it received; your receipt appears here once we confirm it.</Text></Card>}
       {p.method === 'upi' && (p.status === 'pending' || p.status === 'rejected') && (
         <>
           <Card>
             <Text style={s.h2}>1 · Scan and pay</Text>
             {p.qrUrl && <View style={{ alignItems: 'center' }}><Image source={api.imageSource(p.qrUrl)} style={{ width: 240, height: 240 }} accessibilityLabel={`UPI QR code to pay ${rupees(p.amountPaise)}`} /></View>}
-            <Text style={s.body}>Pay <Text style={{ fontWeight: '700' }}>{rupees(p.amountPaise)}</Text> to <Text style={{ fontWeight: '700' }}>{p.upiId}</Text> ({p.payeeName})</Text>
+            <Text style={s.body}>Pay <Text style={{ fontFamily: F.w700 }}>{rupees(p.amountPaise)}</Text> to <Text style={{ fontFamily: F.w700 }}>{p.upiId}</Text> ({p.payeeName})</Text>
             <Text style={s.muted}>Write {p.reference} in the payment note.</Text>
             {p.upiUri && <Button title="Open my UPI app" variant="ghost" onPress={() => Linking.openURL(p.upiUri!).catch(() => setError('No UPI app found. Scan the QR from another phone.'))} />}
           </Card>

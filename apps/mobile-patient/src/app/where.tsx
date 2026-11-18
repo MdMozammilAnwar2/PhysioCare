@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError, draft, type Zone } from '../lib/api';
-import { Button, C, Card, Chips, ErrorText, Field, Screen, ZonePill, s } from '../lib/ui';
+import { F, Button, C, Card, Chips, ErrorText, Field, Screen, ZonePill, s } from '../lib/ui';
 
 export default function Where() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function Where() {
               {zones.map(z => (
                 <Pressable key={z.id} onPress={() => setArea(z)} accessibilityRole="button" accessibilityState={{ selected: area?.id === z.id }}
                   style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 12, backgroundColor: area?.id === z.id ? C.navy : C.white, borderWidth: 1, borderColor: C.line }}>
-                  <Text style={{ color: area?.id === z.id ? C.white : C.navy, fontWeight: '600' }}>{z.name}</Text>
+                  <Text style={{ color: area?.id === z.id ? C.white : C.navy, fontFamily: F.w600 }}>{z.name}</Text>
                 </Pressable>
               ))}
             </View>
@@ -48,7 +48,7 @@ export default function Where() {
           <View style={{ gap: 8 }}>
             <ZonePill color={saved.zone.color} name={saved.zone.name} />
             {saved.zone.color === 'orange' && <Text style={s.muted}>Home visits here run 8 AM – 6 PM.</Text>}
-            {blocked && <Text style={{ color: C.red, fontWeight: '600' }}>Home visits are paused here right now. Choose Video instead.</Text>}
+            {blocked && <Text style={{ color: C.red, fontFamily: F.w600 }}>Home visits are paused here right now. Choose Video instead.</Text>}
           </View>
         )}
         <ErrorText error={error} />

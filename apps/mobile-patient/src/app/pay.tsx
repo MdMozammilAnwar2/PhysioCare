@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { api, ApiError, draft, fmtDay, fmtTime, rupees } from '../lib/api';
-import { Button, C, Card, Check, ErrorText, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, Check, ErrorText, Screen, s } from '../lib/ui';
 
 // Patient picks Cash or UPI; the booking is confirmed here.
 export default function Pay() {
@@ -27,7 +27,7 @@ export default function Pay() {
   const Option = ({ value, title, sub }: { value: 'upi' | 'cash'; title: string; sub: string }) => (
     <Pressable onPress={() => setMethod(value)} accessibilityRole="radio" accessibilityState={{ selected: method === value }}
       style={{ padding: 14, borderRadius: 16, borderWidth: method === value ? 2 : 1, borderColor: method === value ? C.brand : C.line, backgroundColor: method === value ? C.soft : C.white, gap: 4 }}>
-      <Text style={{ fontWeight: '700', fontSize: 16, color: C.navy }}>{title}</Text>
+      <Text style={{ fontFamily: F.w700, fontSize: 16, color: C.navy }}>{title}</Text>
       <Text style={s.muted}>{sub}</Text>
     </Pressable>
   );

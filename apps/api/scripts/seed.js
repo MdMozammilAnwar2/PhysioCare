@@ -4,6 +4,8 @@ import { sequelize, User, UserRole } from '../src/models/index.js';
 import { normalizeIndianPhone } from '../src/lib/util.js';
 import { audit } from '../src/services/audit.js';
 import { config } from '../src/config/index.js';
+import { validateBlocks } from '@physioconnect/shared/cms';
+import { STARTER_PAGES } from './content.js';
 
 const CITIES = [['Patna', 'live'], ['Muzaffarpur', 'recruiting'], ['Hajipur', 'recruiting'], ['Samastipur', 'planned'], ['Darbhanga', 'planned'], ['Gaya', 'planned'], ['Bhagalpur', 'planned'], ['Seemanchal', 'planned']];
 // [name, colour, approx centre lat, lng, radius km] — placeholders until zones are drawn in the console.
@@ -29,7 +31,7 @@ try {
 
   // Console-editable settings start from .env. SETTINGS_FROM_ENV=overwrite replaces what is in the database.
   const overwrite = config.settingsFromEnv === 'overwrite';
-  for (const key of ['money_rules', 'growth_rules', 'maintenance', 'min_app_version']) {
+  for (const key of ['money_rules', 'growth_rules', 'maintenance', 'min_app_version', 'site']) {
     const [rows] = await sequelize.query(`INSERT INTO app_settings (key, value) VALUES (:k, :v)
       ON CONFLICT (key) DO ${overwrite ? 'UPDATE SET value = EXCLUDED.value, updated_at = now()' : 'NOTHING'} RETURNING key`,
     { replacements: { k: key, v: JSON.stringify(config.defaults[key]) } });
@@ -40,10 +42,22 @@ try {
     console.log('Scheduling rules set from .env (new version).');
   }
 
+  // Starter website pages (published). Existing pages are never touched.
+  let added = 0;
+  for (const p of STARTER_PAGES) {
+    const err = validateBlocks(p.blocks);
+    if (err) throw new Error(`Starter page /${p.slug}: ${err}`);
+    const [rows] = await sequelize.query(`INSERT INTO cms_pages (slug, kind, title, summary, blocks, seo, sort_order, status, published_blocks, published_title, published_summary, published_seo, published_at)
+      VALUES (:slug, :kind, :title, :summary, :blocks, :seo, :sort, 'published', :blocks, :title, :summary, :seo, now()) ON CONFLICT (slug) DO NOTHING RETURNING id`,
+    { replacements: { slug: p.slug, kind: p.kind, title: p.title, summary: p.summary ?? null, blocks: JSON.stringify(p.blocks), seo: JSON.stringify(p.seo ?? {}), sort: p.sortOrder ?? 0 } });
+    added += rows.length;
+  }
+  console.log(`Website: ${added} starter page(s) added (${STARTER_PAGES.length - added} already existed).`);
+
   const upiId = (process.env.PAYMENT_UPI_ID || '').trim();
   if (/^[\w.-]{2,256}@[a-zA-Z]{2,64}$/.test(upiId)) {
     await sequelize.query(`UPDATE app_settings SET value = :v, updated_at = now() WHERE key = 'payment_upi'`,
-      { replacements: { v: JSON.stringify({ upiId, payeeName: process.env.PAYMENT_UPI_NAME || 'PhysioConnect' }) } });
+      { replacements: { v: JSON.stringify({ upiId, payeeName: process.env.PAYMENT_UPI_NAME || 'PhysioCare' }) } });
     console.log(`UPI for payments set to ${upiId}.`);
   } else console.log('PAYMENT_UPI_ID not set: UPI payments stay off (cash only) until it is.');
 

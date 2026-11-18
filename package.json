@@ -1,6 +1,6 @@
 {
   "name": "physioconnect",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "PhysioConnect by Healthtropic — monorepo for API, web apps and mobile apps",
   "workspaces": [
@@ -22,10 +22,14 @@
     "build": "npm run build -w @physioconnect/web-admin && npm run build -w @physioconnect/web-site",
     "api:seed:demo": "npm run seed:demo -w @physioconnect/api",
     "patient:dev": "npm run start -w @physioconnect/mobile-patient",
-    "therapist:dev": "npm run start -w @physioconnect/mobile-therapist"
+    "therapist:dev": "npm run start -w @physioconnect/mobile-therapist",
+    "brand": "node scripts/brand-assets.mjs"
   },
   "overrides": {
     "react": "19.3.0",
     "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
   }
 }

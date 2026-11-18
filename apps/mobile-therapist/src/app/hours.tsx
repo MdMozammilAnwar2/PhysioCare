@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, ApiError } from '../lib/api';
-import { Button, C, Card, ErrorText, Field, Screen, s } from '../lib/ui';
+import { F, Button, C, Card, ErrorText, Field, Screen, s } from '../lib/ui';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const valid = (t: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
@@ -50,7 +50,7 @@ export default function Hours() {
             return (
               <Pressable key={d} accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={() => setDays(on ? days.filter(x => x !== i) : [...days, i])}
                 style={[s.chip, { minWidth: 52, alignItems: 'center' }, on ? { backgroundColor: C.navy } : { backgroundColor: C.white, borderWidth: 1, borderColor: C.line }]}>
-                <Text style={{ color: on ? C.white : C.navy, fontWeight: '700' }}>{d}</Text>
+                <Text style={{ color: on ? C.white : C.navy, fontFamily: F.w700 }}>{d}</Text>
               </Pressable>
             );
           })}

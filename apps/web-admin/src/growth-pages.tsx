@@ -86,7 +86,7 @@ function QrImage({ path, label }: { path: string; label: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => { let url: string | null = null; fetch(`/api/v1${path.replace('/api/v1', '')}`, { headers: { authorization: `Bearer ${sessionStorage.getItem('pc.access')}` } }).then(r => r.blob()).then(b => { url = URL.createObjectURL(b); setSrc(url); }).catch(() => undefined); return () => { if (url) URL.revokeObjectURL(url); }; }, [path]);
   if (!src) return <div className="w-40 h-40 bg-canvas rounded-xl" />;
-  return <a href={src} download={`PhysioConnect-${label}.png`} title="Download"><img src={src} alt={`QR code: ${label}`} className="w-40 h-40 rounded-xl border border-line" /></a>;
+  return <a href={src} download={`PhysioCare-${label}.png`} title="Download"><img src={src} alt={`QR code: ${label}`} className="w-40 h-40 rounded-xl border border-line" /></a>;
 }
 
 export function PartnerDetail({ canDecide, canPay }: { canDecide: boolean; canPay: boolean }) {

@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import { ADMIN_ROLES } from '@physioconnect/shared';
 import { api, ApiError, hasSession, type Status, type User } from './api';
+import { Logo } from './Logo';
+import { CmsPageEditor, CmsPages, SiteSettingsPage } from './cms-editor';
 import { Header, Live, Payments, TherapistReview, VerificationQueue } from './pages';
 import { Incidents, MoneyRulesPage, Payouts, Refunds, Tds } from './money-pages';
 import { GrowthReport, GrowthRulesPage, PartnerDetail, Partners } from './growth-pages';
 import { AuditLog, Blocks, Dashboard, GrievanceDetail, Grievances, PlatformSettings, Staff, UserDetail, Users, Zones } from './control-pages';
 
-// Checks the public status API on start and every 60 s, like every PhysioConnect app.
+// Checks the public status API on start and every 60 s, like every PhysioCare app.
 function useStatus() {
   const [status, setStatus] = useState<Status | null>(null);
   const [down, setDown] = useState(false);
@@ -37,7 +39,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (u: User) => void }) {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <form onSubmit={submit} className="w-full max-w-md bg-white rounded-card shadow-sm border border-line p-8 flex flex-col gap-4">
-        <p className="text-sm text-sub font-semibold">PhysioConnect by Healthtropic</p>
+        <Logo height={34} endorsed />
         <h1 className="text-3xl font-extrabold tracking-tight">Console sign in</h1>
         {step === 'phone' ? (
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-sub">Mobile number
@@ -50,14 +52,14 @@ function SignIn({ onSignedIn }: { onSignedIn: (u: User) => void }) {
         )}
         {error && <p role="alert" className="text-sm text-danger-ink">{error}</p>}
         <button disabled={busy} className="h-12 rounded-xl bg-navy text-white font-bold disabled:opacity-60">{step === 'phone' ? 'Send code' : 'Sign in'}</button>
-        <p className="text-xs text-sub">For PhysioConnect staff only. Every action is saved to the audit log.</p>
+        <p className="text-xs text-sub">For PhysioCare staff only. Every action is saved to the audit log.</p>
       </form>
     </div>
   );
 }
 
 const NAV: [string, string, string[]][] = [
-  ['/dashboard', 'Dashboard', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
+  ['/dashboard', 'Dashboard', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'content_editor', 'super_admin']],
   ['/live', 'Live visits & SOS', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/verification', 'Verification', ['ops_admin', 'super_admin', 'city_coordinator']],
   ['/payments', 'Payments to confirm', ['ops_admin', 'finance', 'super_admin']],
@@ -69,6 +71,8 @@ const NAV: [string, string, string[]][] = [
   ['/partners', 'Partners', ['ops_admin', 'city_coordinator', 'finance', 'super_admin']],
   ['/growth', 'Where patients come from', ['ops_admin', 'city_coordinator', 'finance', 'super_admin']],
   ['/growth-rules', 'Coins & rewards', ['ops_admin', 'finance', 'super_admin']],
+  ['/website/pages', 'Website pages', ['content_editor', 'ops_admin', 'super_admin']],
+  ['/website/settings', 'Website settings', ['content_editor', 'ops_admin', 'super_admin']],
   ['/grievances', 'Grievances', ['grievance_committee', 'ops_admin', 'super_admin']],
   ['/users', 'Users', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
   ['/blocks', 'Blocked accounts', ['ops_admin', 'finance', 'city_coordinator', 'grievance_committee', 'super_admin']],
@@ -83,7 +87,7 @@ function Console({ user, status, onSignOut }: { user: User; status: Status | nul
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 shrink-0 bg-navy text-white p-5 flex flex-col gap-1 sticky top-0 h-screen overflow-y-auto">
-        <span className="text-lg font-extrabold">PhysioConnect</span>
+        <span className="mb-1"><Logo variant="dark" height={28} /></span>
         <span className="text-xs text-white/60 mb-6">Console · {user.primaryRole.replace('_', ' ')}</span>
         {nav.map(([to, label]) => (
           <NavLink key={to} to={to} className={({ isActive }) => `rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-brand font-bold' : 'text-white/80 hover:bg-white/10'}`}>{label}</NavLink>
@@ -94,6 +98,9 @@ function Console({ user, status, onSignOut }: { user: User; status: Status | nul
       </aside>
       <main className="flex-1 min-w-0 p-8">
         <Routes>
+          <Route path="/website/pages" element={<CmsPages />} />
+          <Route path="/website/pages/:id" element={<CmsPageEditor />} />
+          <Route path="/website/settings" element={<SiteSettingsPage />} />
           <Route path="/dashboard" element={<Dashboard roles={user.roles} />} />
           <Route path="/users" element={<Users />} />
           <Route path="/users/:id" element={<UserDetail me={user.id} isSuper={user.roles.includes('super_admin')} />} />
@@ -137,7 +144,7 @@ export default function App() {
       {status?.maintenance.enabled && <div className="bg-warning text-navy text-sm font-semibold px-4 py-2">Maintenance: {status.maintenance.message ?? 'some features may be unavailable.'}</div>}
       {!user ? <SignIn onSignedIn={setUser} /> : !isStaff ? (
         <div className="min-h-screen flex items-center justify-center p-6"><div className="max-w-md bg-white border border-line rounded-card p-8 flex flex-col gap-3">
-          <h1 className="text-2xl font-extrabold">No console access</h1><p className="text-sub">This account isn’t PhysioConnect staff. Access is given by a super admin.</p>
+          <h1 className="text-2xl font-extrabold">No console access</h1><p className="text-sub">This account isn’t PhysioCare staff. Access is given by a super admin.</p>
           <button onClick={() => api.logout().then(() => setUser(null))} className="h-11 rounded-xl border border-line font-bold">Sign out</button>
         </div></div>
       ) : <Console user={user} status={status} onSignOut={() => api.logout().then(() => setUser(null))} />}

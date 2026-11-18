@@ -3,7 +3,7 @@ import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { api, ApiError, fmtDay, fmtTime, rupees, visitsCache } from '../../lib/api';
-import { Button, C, Card, Check, ErrorText, Field, Screen, ZonePill, s } from '../../lib/ui';
+import { F, Button, C, Card, Check, ErrorText, Field, Screen, ZonePill, s } from '../../lib/ui';
 import { sendSos } from '../../lib/sos';
 
 const LOCATION_EVERY_MS = Number(process.env.EXPO_PUBLIC_LOCATION_EVERY_SECONDS || 60) * 1000;
@@ -56,7 +56,7 @@ export default function VisitScreen() {
       <Card>
         {v.line1 ? <Text style={s.body}>{v.line1}{v.landmark ? ` · ${v.landmark}` : ''}</Text> : null}
         {v.zone_color ? <ZonePill color={v.zone_color} name={v.zone_name} /> : null}
-        {needsFamily && v.family_member ? <Text style={{ color: C.amber, fontWeight: '600' }}>Required: {v.family_member.relation} ({v.family_member.name}) must be at home.</Text> : null}
+        {needsFamily && v.family_member ? <Text style={{ color: C.amber, fontFamily: F.w600 }}>Required: {v.family_member.relation} ({v.family_member.name}) must be at home.</Text> : null}
         {v.lat != null && <Button title="Directions" variant="ghost" onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}`)} />}
       </Card>
 
@@ -90,7 +90,7 @@ export default function VisitScreen() {
         </Card>
       )}
 
-      {status === 'completed' && <Card><Text style={{ color: C.green, fontWeight: '700' }}>Visit completed. Notes saved and shared with the patient.</Text></Card>}
+      {status === 'completed' && <Card><Text style={{ color: C.green, fontFamily: F.w700 }}>Visit completed. Notes saved and shared with the patient.</Text></Card>}
       {status === 'cancelled' && <Card><Text style={s.body}>This visit was cancelled. The patient will choose a new time.</Text></Card>}
 
       {v.payment_method === 'cash' && v.payment_id && !cashDone && (status === 'checked_in' || status === 'completed') && (
@@ -103,13 +103,13 @@ export default function VisitScreen() {
           <Pressable accessibilityRole="button" accessibilityLabel="SOS. Hold to alert our safety team and your emergency contacts" delayLongPress={2000}
             onLongPress={() => sendSos(id).catch(e => setError(e instanceof ApiError ? e.message : 'SOS failed. Call 112.'))}
             style={{ backgroundColor: '#F43F5E', borderRadius: 999, width: 140, height: 140, alignSelf: 'center', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 30 }}>SOS</Text>
+            <Text style={{ color: '#fff', fontFamily: F.w800, fontSize: 30 }}>SOS</Text>
           </Pressable>
           <Text style={[s.muted, { textAlign: 'center' }]}>Hold 2 seconds. Alerts our 24×7 safety team with your location.</Text>
         </View>
       )}
       {v.patient_name && (
-        <Text accessibilityRole="button" style={{ color: C.red, fontWeight: '700', textAlign: 'center', paddingVertical: 12 }}
+        <Text accessibilityRole="button" style={{ color: C.red, fontFamily: F.w700, textAlign: 'center', paddingVertical: 12 }}
           onPress={() => Alert.alert('Block this patient?', 'You won’t be matched with them again. Our team reviews every block. If you are in danger, use SOS or call 112.', [
             { text: 'Cancel', style: 'cancel' },
             ...([['unsafe_home', 'Unsafe home'], ['abuse', 'Abusive'], ['harassment', 'Harassment'], ['payment_default', 'Didn’t pay']] as const).map(([code, label]) => ({

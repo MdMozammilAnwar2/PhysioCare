@@ -225,7 +225,7 @@ export async function rateVisit({ patientId, visitId, stars, tags = [], comment 
 }
 
 // ---------- chat safety ----------
-// Contact details are blocked so visits and payments stay inside PhysioConnect (safety + leakage).
+// Contact details are blocked so visits and payments stay inside PhysioCare (safety + leakage).
 const PATTERNS = [
   ['phone_number', /(?:\+?91[\s-]?)?[6-9](?:[\s-]?\d){9}/],
   ['upi_id', /\b[\w.-]{2,}@(?:ok)?[a-z]{2,}\b/i],
